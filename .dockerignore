@@ -1,0 +1,5 @@
+target/
+.git/
+.jj/
+*.log
+**/.skill-test-logs/

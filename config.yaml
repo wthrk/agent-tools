@@ -1,0 +1,12 @@
+# skill-tools configuration
+config_version: 1
+
+# Skills to auto-deploy to ~/.claude/skills/
+auto_deploy_skills:
+  - searching-skills
+
+# Manage ~/.claude/settings.json (link to ~/.skill-tools/settings.json)
+manage_settings: true
+
+# Manage ~/.claude/plugins/ (link to ~/.skill-tools/plugins/)
+manage_plugins: false
