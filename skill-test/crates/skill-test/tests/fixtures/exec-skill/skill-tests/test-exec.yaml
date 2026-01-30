@@ -1,0 +1,20 @@
+# Converted from test-case.yaml + contracts/skills/exec-test-skill.yaml
+
+- id: exec-001
+  prompt: "Run /exec-test-skill to output JS code"
+  assertions:
+    # exec with exit_code:0
+    - id: exec-exit-code-zero
+      type: exec
+      command: "node"
+      language: "javascript"
+      timeout_ms: 5000
+      expect: "exit_code:0"
+    # exec with output_contains
+    - id: exec-output-contains
+      type: exec
+      command: "node"
+      language: "javascript"
+      timeout_ms: 5000
+      expect:
+        output_contains: "hello"

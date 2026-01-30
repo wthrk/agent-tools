@@ -1,0 +1,18 @@
+# Converted from test-case.yaml + contracts/skills/line-count-test-skill.yaml
+
+- id: line-count-001
+  prompt: "Run /line-count-test-skill"
+  assertions:
+    # line_count with min and max
+    - id: line-count-min-max
+      type: line_count
+      min: 5
+      max: 20
+    # line_count with min only
+    - id: line-count-min-only
+      type: line_count
+      min: 1
+    # line_count with max only
+    - id: line-count-max-only
+      type: line_count
+      max: 100

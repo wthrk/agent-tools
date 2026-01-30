@@ -1,0 +1,18 @@
+# Test Python exec
+- id: exec-python-001
+  prompt: "Run /exec-python-test-skill to output Python code"
+  assertions:
+    - id: exec-python-exit-code
+      type: exec
+      command: python3
+      language: python
+      timeout_ms: 10000
+      expect: exit_code:0
+
+    - id: exec-python-output
+      type: exec
+      command: python3
+      language: python
+      timeout_ms: 10000
+      expect:
+        output_contains: "PYTHON_EXEC_SUCCESS"

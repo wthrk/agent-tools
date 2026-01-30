@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-01-30T00:51:26.606Z",
+  "skills": [
+    {
+      "skill_name": "testfile-format",
+      "skill_path": "/Users/ya/works/agent-tools/skill-test/crates/skill-test/tests/fixtures/testfile-format-skill",
+      "tests": [
+        {
+          "name": "shared-assertion-test",
+          "desc": "Test using same assertion in both lists",
+          "prompt": "Greet me",
+          "iterations": [
+            {
+              "iteration": 1,
+              "passed": false,
+              "latency_ms": 13924,
+              "output": "こんにちは！Claude Codeにご挨拶いただき、ありがとうございます。ソフトウェアエンジニアリングタスクのお手伝いをさせていただきます。\n\nコーディング、デバッグ、リファクタリング、コードの説明など、様々な開発関連のタスクでサポート可能です。何かご質問やお手伝いできることがございましたら、お気軽にお申し付けください。\n\nどのようなタスクから始めましょうか？",
+              "output_hash": "d8b32b27523562582078cc97d2e7f51d332d714729e114770695c16eb89f96fa",
+              "called_tools": [],
+              "assertions": [
+                {
+                  "name": "has-hello",
+                  "desc": "Response contains Hello",
+                  "assertion_type": "contains",
+                  "pattern": "Hello",
+                  "passed": false,
+                  "error": null
+                }
+              ],
+              "golden_assertions": [
+                {
+                  "name": "has-hello",
+                  "desc": "Response contains Hello",
+                  "assertion_type": "contains",
+                  "pattern": "Hello",
+                  "passed": false,
+                  "error": null
+                }
+              ]
+            }
+          ],
+          "summary": {
+            "id": "shared-assertion-test",
+            "iterations": 1,
+            "passed": 0,
+            "failed": 1,
+            "pass_rate": 0.0,
+            "verdict": "Fail",
+            "failures": [
+              "iteration 1: has-hello"
+            ],
+            "golden_failures": [
+              "iteration 1: has-hello"
+            ],
+            "called_tools": []
+          }
+        }
+      ],
+      "verdict": "Fail",
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_skills": 1,
+    "passed_skills": 0,
+    "failed_skills": 1,
+    "total_tests": 1,
+    "passed_tests": 0,
+    "failed_tests": 1
+  }
+}

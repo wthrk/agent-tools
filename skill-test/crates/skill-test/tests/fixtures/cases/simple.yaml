@@ -1,0 +1,5 @@
+- id: "test-001"
+  prompt: "Test prompt for skill-a"
+  expected_skills: ["skill-a"]
+  match_policy: "all"
+  forbid_skills: []

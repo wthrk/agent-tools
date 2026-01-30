@@ -1,0 +1,9 @@
+# This will cause a parse error because 'unknown_field' is not allowed
+- id: invalid-yaml-001
+  prompt: "Test"
+  unknown_field: "should cause error"
+  assertions:
+    - id: dummy
+      type: contains
+      pattern: "test"
+      expect: present

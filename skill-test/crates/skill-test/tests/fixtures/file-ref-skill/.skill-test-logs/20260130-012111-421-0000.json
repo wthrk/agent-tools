@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-01-30T01:21:11.421Z",
+  "skills": [
+    {
+      "skill_name": "file-ref-skill",
+      "skill_path": "/Users/ya/works/agent-tools/skill-test/crates/skill-test/tests/fixtures/file-ref-skill",
+      "tests": [
+        {
+          "name": "file-ref-001",
+          "desc": null,
+          "prompt": "Run /file-ref-skill",
+          "iterations": [
+            {
+              "iteration": 1,
+              "passed": false,
+              "latency_ms": 12071,
+              "output": "申し訳ありませんが、`/file-ref-skill`という名前のスキルは利用可能なスキルリストに含まれていません。\n\n現在利用可能なスキルは以下の通りです：\n\n- `agent-browser`: ブラウザの自動操作（ウェブテスト、フォーム入力、スクリーンショット、データ抽出など）\n- `code-review:code-review`: プルリクエストのコードレビュー\n- `pr-review-toolkit:review-pr`: 専門エージェントを使用した包括的なPRレビュー\n- `ask-codex:ask-codex`: Codex CLIからコーディング支援を求める\n\nもしかして、以下のいずれかをお探しでしょうか：\n- ファイル参照に関する機能\n- 特定のコードレビューやファイル分析のタスク\n- その他の開発支援機能\n\nどのようなタスクをお手伝いできるか、詳しく教えていただけますでしょうか。",
+              "output_hash": "3a9306cb33a83382fb9891814d15c47a0690224b91077ed0ffa1f577fd4048db",
+              "called_tools": [],
+              "assertions": [
+                {
+                  "name": "shared-check",
+                  "desc": null,
+                  "assertion_type": "contains",
+                  "pattern": "File reference",
+                  "passed": false,
+                  "error": null
+                },
+                {
+                  "name": "inline-check",
+                  "desc": null,
+                  "assertion_type": "contains",
+                  "pattern": "test",
+                  "passed": false,
+                  "error": null
+                }
+              ],
+              "golden_assertions": []
+            }
+          ],
+          "summary": {
+            "id": "file-ref-001",
+            "iterations": 1,
+            "passed": 0,
+            "failed": 1,
+            "pass_rate": 0.0,
+            "verdict": "Fail",
+            "failures": [
+              "iteration 1: shared-check, inline-check"
+            ],
+            "golden_failures": [],
+            "called_tools": []
+          }
+        }
+      ],
+      "verdict": "Fail",
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_skills": 1,
+    "passed_skills": 0,
+    "failed_skills": 1,
+    "total_tests": 1,
+    "passed_tests": 0,
+    "failed_tests": 1
+  }
+}

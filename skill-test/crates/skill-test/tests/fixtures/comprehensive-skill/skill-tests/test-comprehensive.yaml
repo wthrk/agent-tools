@@ -1,0 +1,102 @@
+# Comprehensive test cases for all assertion types
+
+- id: comprehensive-001
+  prompt: "Run /comprehensive-test-skill to generate a greeting"
+  assertions:
+    # Type 1: regex assertion
+    - id: has-greeting
+      type: regex
+      pattern: "Hello"
+      expect: present
+
+    # Type 2: contains assertion
+    - id: has-console-log
+      type: contains
+      pattern: "console.log"
+      expect: present
+
+    # Type 3: line_count assertion
+    - id: reasonable-length
+      type: line_count
+      min: 1
+      max: 50
+
+    # Type 4: tool_called assertion (present)
+    - id: uses-skill-tool
+      type: tool_called
+      pattern: "Skill"
+      expect: present
+
+    # Type 5: tool_called assertion (absent)
+    - id: no-bash-tool
+      type: tool_called
+      pattern: "Bash"
+      expect: absent
+  golden_assertions:
+    # Golden: tool_called with regex pattern
+    - id: no-write-tools
+      type: tool_called
+      pattern: "Write|Edit"
+      expect: absent
+
+    # Golden: contains for best practice
+    - id: has-semicolon
+      type: contains
+      pattern: ";"
+      expect: present
+
+- id: comprehensive-002-with-validation
+  prompt: "Run /comprehensive-test-skill to generate a greeting"
+  assertions:
+    # Type 1: regex assertion
+    - id: has-greeting
+      type: regex
+      pattern: "Hello"
+      expect: present
+
+    # Type 2: contains assertion
+    - id: has-console-log
+      type: contains
+      pattern: "console.log"
+      expect: present
+
+    # Type 3: line_count assertion
+    - id: reasonable-length
+      type: line_count
+      min: 1
+      max: 50
+
+    # Type 4: tool_called assertion (present)
+    - id: uses-skill-tool
+      type: tool_called
+      pattern: "Skill"
+      expect: present
+
+    # Type 5: tool_called assertion (absent)
+    - id: no-bash-tool
+      type: tool_called
+      pattern: "Bash"
+      expect: absent
+
+    # Inline llm_eval from validation
+    - id: inline-llm-eval
+      type: llm_eval
+      pattern: |
+        Does the following output contain a greeting message?
+        Answer YES or NO.
+
+        Output:
+        {{output}}
+      expect: pass
+  golden_assertions:
+    # Golden: tool_called with regex pattern
+    - id: no-write-tools
+      type: tool_called
+      pattern: "Write|Edit"
+      expect: absent
+
+    # Golden: contains for best practice
+    - id: has-semicolon
+      type: contains
+      pattern: ";"
+      expect: present

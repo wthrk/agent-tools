@@ -1,0 +1,25 @@
+scenarios:
+  test-c:
+    desc: "Test C"
+    prompt: "Hello C"
+    assertions:
+      - type: contains
+        id: has-c
+        text: "Hello"
+        expect: present
+  test-a:
+    desc: "Test A"
+    prompt: "Hello A"
+    assertions:
+      - type: contains
+        id: has-a
+        text: "Hello"
+        expect: present
+  test-b:
+    desc: "Test B"
+    prompt: "Hello B"
+    assertions:
+      - type: contains
+        id: has-b
+        text: "Hello"
+        expect: present

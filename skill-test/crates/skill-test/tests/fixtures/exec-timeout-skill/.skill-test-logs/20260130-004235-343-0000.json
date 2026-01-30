@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-01-30T00:42:35.343Z",
+  "skills": [
+    {
+      "skill_name": "exec-timeout-test-skill",
+      "skill_path": "/Users/ya/works/agent-tools/skill-test/crates/skill-test/tests/fixtures/exec-timeout-skill",
+      "tests": [
+        {
+          "name": "exec-timeout-001",
+          "desc": null,
+          "prompt": "Run /exec-timeout-test-skill to output slow JS code",
+          "iterations": [
+            {
+              "iteration": 1,
+              "passed": false,
+              "latency_ms": 18201,
+              "output": "スキルの要求に従って、以下のJavaScriptコードを出力いたします：\n\n```javascript\n// Sleep for 5 seconds\nsetTimeout(() => {\n  console.log(\"TIMEOUT_TEST_DONE\");\n}, 5000);\n```\n\nこのコードは5秒後に\"TIMEOUT_TEST_DONE\"というメッセージをコンソールに出力する、遅延処理のテストコードでございます。",
+              "output_hash": "016068fc7cf3d13a1f5d03f0d45e8730279fa3531e3561380227f7771ce3fa41",
+              "called_tools": [
+                "Skill"
+              ],
+              "assertions": [
+                {
+                  "name": "exec-timeout-should-fail",
+                  "desc": null,
+                  "assertion_type": "exec",
+                  "pattern": null,
+                  "passed": false,
+                  "error": "exec timeout after 1000ms"
+                }
+              ],
+              "golden_assertions": []
+            }
+          ],
+          "summary": {
+            "id": "exec-timeout-001",
+            "iterations": 1,
+            "passed": 0,
+            "failed": 1,
+            "pass_rate": 0.0,
+            "verdict": "Fail",
+            "failures": [
+              "iteration 1: exec-timeout-should-fail: exec timeout after 1000ms"
+            ],
+            "golden_failures": [],
+            "called_tools": [
+              "Skill"
+            ]
+          }
+        }
+      ],
+      "verdict": "Fail",
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_skills": 1,
+    "passed_skills": 0,
+    "failed_skills": 1,
+    "total_tests": 1,
+    "passed_tests": 0,
+    "failed_tests": 1
+  }
+}

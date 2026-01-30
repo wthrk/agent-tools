@@ -1,0 +1,8 @@
+# TestFile format with empty prompt (should cause validation error)
+desc: "Empty prompt error test"
+
+scenarios:
+  empty-prompt-scenario:
+    desc: "Scenario with empty prompt"
+    prompt: ""
+    assertions: []

@@ -1,0 +1,10 @@
+- id: file-ref-001
+  prompt: "Run /file-ref-skill"
+  assertions:
+    # Load assertions from external file
+    - file: ./shared/common-assertions.yaml
+    # Also include inline assertion
+    - id: inline-check
+      type: contains
+      pattern: "test"
+      expect: present

@@ -1,0 +1,61 @@
+# Test file using new TestFile format with scenarios and named assertions
+desc: "TestFile format validation tests"
+
+# Named assertions (can be referenced by scenarios)
+assertions:
+  has-hello:
+    desc: "Response contains Hello"
+    type: contains
+    pattern: "Hello"
+    expect: present
+
+  has-world:
+    desc: "Response contains World"
+    type: contains
+    pattern: "World"
+    expect: present
+
+  no-error:
+    desc: "No error message in response"
+    type: contains
+    pattern: "error"
+    expect: absent
+
+  line-count-check:
+    desc: "Response has reasonable length"
+    type: line_count
+    min: 1
+    max: 10
+
+# Scenarios using named assertions
+scenarios:
+  greeting-test:
+    desc: "Test greeting response"
+    prompt: "Say hello"
+    assertions:
+      - has-hello      # name reference
+      - has-world      # name reference
+      - no-error       # name reference
+    golden_assertions:
+      - line-count-check
+
+  inline-assertion-test:
+    desc: "Test with inline assertion"
+    prompt: "Say hello world"
+    assertions:
+      - has-hello
+      - id: inline-exclamation
+        desc: "May have exclamation"
+        type: contains
+        pattern: "!"
+        expect: present
+    golden_assertions:
+      - no-error
+
+  shared-assertion-test:
+    desc: "Test using same assertion in both lists"
+    prompt: "Greet me"
+    assertions:
+      - has-hello
+    golden_assertions:
+      - has-hello  # Same assertion in golden (allowed)
