@@ -4,7 +4,7 @@ services:
     build:
       context: ..
       dockerfile: skill-tools/Dockerfile.test
-    command: ["cargo", "test", "-p", "skill-tools"]
+    command: ["cargo", "test", "-p", "skill-tools", "--manifest-path", "/home/testuser/.skill-tools/Cargo.toml"]
     volumes:
       - cargo-cache:/home/testuser/.cargo/registry
       - cargo-git:/home/testuser/.cargo/git
@@ -17,7 +17,7 @@ services:
     build:
       context: ..
       dockerfile: skill-tools/Dockerfile.test
-    command: ["cargo", "test", "-p", "skill-tools", "--test", "integration_tests"]
+    command: ["cargo", "test", "-p", "skill-tools", "--test", "integration_tests", "--manifest-path", "/home/testuser/.skill-tools/Cargo.toml"]
     volumes:
       - cargo-cache:/home/testuser/.cargo/registry
       - cargo-git:/home/testuser/.cargo/git

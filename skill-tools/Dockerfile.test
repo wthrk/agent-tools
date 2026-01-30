@@ -1,5 +1,6 @@
 # Test environment for skill-tools
-FROM rust:1.85-bookworm
+# Simulates real installation: clone to ~/.skill-tools, build, install to bin/
+FROM rust:latest
 
 # Install additional tools
 RUN apt-get update && apt-get install -y \
@@ -9,14 +10,35 @@ RUN apt-get update && apt-get install -y \
 # Create test user (non-root)
 RUN useradd -m -s /bin/bash testuser
 USER testuser
-WORKDIR /home/testuser
 
-# Set up test environment
+# Set up environment (matches real installation)
 ENV HOME=/home/testuser
+ENV SKILL_TOOLS_HOME=/home/testuser/.skill-tools
+ENV PATH="/home/testuser/.skill-tools/bin:${PATH}"
 
-# Copy project files
-COPY --chown=testuser:testuser . /home/testuser/agent-tools
-WORKDIR /home/testuser/agent-tools
+# Copy project to ~/.skill-tools (simulates git clone)
+COPY --chown=testuser:testuser . /home/testuser/.skill-tools
+WORKDIR /home/testuser/.skill-tools
 
-# Default command: run all tests
-CMD ["cargo", "test", "-p", "skill-tools"]
+# Initialize git repo (required for skill-tools update)
+RUN git init && \
+    git config user.email "test@example.com" && \
+    git config user.name "Test User" && \
+    git add -A && \
+    git commit -m "Initial commit"
+
+# Build and install (simulates cargo make install)
+RUN cargo build --release -p skill-tools -p skill-test && \
+    mkdir -p bin && \
+    cp target/release/skill-tools bin/ && \
+    cp target/release/skill-test bin/
+
+# Create test project (simulates user's project)
+RUN mkdir -p /home/testuser/test-project/.git && \
+    mkdir -p /home/testuser/test-project/.claude
+
+# Run tests from project directory (not from repo)
+WORKDIR /home/testuser/test-project
+
+# Default command
+CMD ["cargo", "test", "-p", "skill-tools", "--manifest-path", "/home/testuser/.skill-tools/Cargo.toml"]

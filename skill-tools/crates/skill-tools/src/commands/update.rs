@@ -27,7 +27,14 @@ pub fn run() -> Result<()> {
         .context("Failed to run git status")?;
 
     if !status.status.success() {
-        bail!("Failed to check git status");
+        let stdout = String::from_utf8_lossy(&status.stdout);
+        let stderr = String::from_utf8_lossy(&status.stderr);
+        bail!(
+            "Failed to check git status in {}:\n{}{}\nIs this a git repository?",
+            skill_tools_home.display(),
+            stdout,
+            stderr
+        );
     }
 
     let status_output = String::from_utf8_lossy(&status.stdout);
@@ -63,13 +70,16 @@ pub fn run() -> Result<()> {
     let pull = Command::new("git")
         .args(["pull", "--ff-only"])
         .current_dir(&skill_tools_home)
-        .status()
+        .output()
         .context("Failed to run git pull")?;
 
-    if !pull.success() {
+    if !pull.status.success() {
+        let stderr = String::from_utf8_lossy(&pull.stderr);
+        let stdout = String::from_utf8_lossy(&pull.stdout);
         bail!(
-            "Git pull failed. There may be conflicts.\n\
-             Please resolve them manually in {}",
+            "Git pull failed:\n{}{}\nPlease resolve manually in {}",
+            stdout,
+            stderr,
             skill_tools_home.display()
         );
     }
@@ -80,11 +90,14 @@ pub fn run() -> Result<()> {
     let build = Command::new("cargo")
         .args(["build", "--release", "-p", "skill-tools"])
         .current_dir(&skill_tools_home)
-        .status()
+        .output()
         .context("Failed to run cargo build")?;
 
-    if !build.success() {
-        println!("{}", "Build failed! Attempting to restore backup...".red());
+    if !build.status.success() {
+        let stderr = String::from_utf8_lossy(&build.stderr);
+        let stdout = String::from_utf8_lossy(&build.stdout);
+        println!("{}", "Build failed!".red());
+        println!("{}{}", stdout, stderr);
 
         // Try to restore backup
         let backups_dir = paths::backups_dir()?;
@@ -93,8 +106,7 @@ pub fn run() -> Result<()> {
                 let backup_path = latest.path();
                 if let Err(e) = fs::copy(&backup_path, &current_bin) {
                     bail!(
-                        "Build failed and restore failed: {}\n\
-                         Backup is at: {}",
+                        "Restore failed: {}\nBackup is at: {}",
                         e,
                         backup_path.display()
                     );

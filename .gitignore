@@ -22,3 +22,6 @@ Thumbs.db
 
 # Skill test logs
 .skill-test-logs/
+
+# Local binaries
+/bin/

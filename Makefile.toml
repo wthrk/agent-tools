@@ -47,3 +47,37 @@ fi
 [tasks.integration-test]
 command = "cargo"
 args = ["test", "-p", "skill-test", "--features", "integration-test", "--", "--test-threads=2"]
+
+# Docker tests for skill-tools
+[tasks.docker-test]
+command = "docker"
+args = ["compose", "-f", "skill-tools/docker-compose.test.yaml", "run", "--rm", "test"]
+
+[tasks.docker-test-build]
+command = "docker"
+args = ["compose", "-f", "skill-tools/docker-compose.test.yaml", "build", "--no-cache", "test"]
+
+# Install: build and copy to ~/.skill-tools/bin/
+[tasks.install]
+dependencies = ["build-release", "copy-binaries"]
+
+[tasks.build-release]
+command = "cargo"
+args = ["build", "--release", "-p", "skill-tools", "-p", "skill-test"]
+
+[tasks.copy-binaries]
+script_runner = "@duckscript"
+script = '''
+home_dir = get_home_dir
+bin_dir = set "${home_dir}/.skill-tools/bin"
+mkdir ${bin_dir}
+cp target/release/skill-tools ${bin_dir}/skill-tools
+cp target/release/skill-test ${bin_dir}/skill-test
+echo Installed: ${bin_dir}/skill-tools
+echo Installed: ${bin_dir}/skill-test
+echo
+echo Add to shell profile:
+dollar = set "$"
+path_line = concat "  export PATH=" ${bin_dir} ":" ${dollar} "PATH"
+echo ${path_line}
+'''
