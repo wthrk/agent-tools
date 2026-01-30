@@ -1,0 +1,27 @@
+[package]
+name = "skill-test-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Core library for skill-test CLI"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yml = "0.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "time"] }
+regex = "1"
+sha2 = "0.10"
+thiserror = "2"
+tempfile = "3"
+glob = "0.3"
+futures = "0.3"
+jsonschema = "0.40"
+time = { version = "0.3", features = ["formatting", "macros"] }
+
+[dev-dependencies]
+which = "8"
+
+[lints]
+workspace = true
