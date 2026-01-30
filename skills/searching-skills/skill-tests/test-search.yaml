@@ -1,0 +1,225 @@
+# searching-skills test cases
+desc: "検索スキルのテスト - 検索と詳細表示機能"
+
+# === 再利用可能なアサーション定義 ===
+assertions:
+  has-numbered-list:
+    desc: "番号付きリスト形式"
+    type: regex
+    pattern: "\\d+\\."
+    expect: present
+
+  has-score:
+    desc: "スコア表示 (X/35形式)"
+    type: regex
+    pattern: "\\d+/35"
+    expect: present
+
+  has-security-indicator:
+    desc: "セキュリティ指標"
+    type: regex
+    pattern: "🔒|⚠️|🚨|Security"
+    expect: present
+
+  has-source-url:
+    desc: "ソースURL"
+    type: regex
+    pattern: "https?://"
+    expect: present
+
+  has-skill-name:
+    desc: "スキル名（太字）"
+    type: regex
+    pattern: "\\*\\*[^*]+\\*\\*"
+    expect: present
+
+  has-purpose:
+    desc: "目的/説明セクション"
+    type: regex
+    pattern: "Purpose:|What it does|Description:|説明"
+    expect: present
+
+  has-multiple-results:
+    desc: "複数結果の表示"
+    type: regex
+    pattern: "Found|発見|件"
+    expect: present
+
+  has-configuration:
+    desc: "設定セクション"
+    type: regex
+    pattern: "Configuration:|allowed-tools|設定"
+    expect: present
+
+  has-workflow:
+    desc: "ワークフロー/使い方"
+    type: regex
+    pattern: "How it works|Workflow|動作|使い方"
+    expect: present
+
+  has-usage:
+    desc: "使用方法"
+    type: regex
+    pattern: "Usage:|使用|インストール"
+    expect: present
+
+  has-updated-date:
+    desc: "更新日"
+    type: regex
+    pattern: "Updated:|\\d{4}-\\d{2}-\\d{2}"
+    expect: present
+
+# === シナリオ定義 ===
+scenarios:
+  # === Phase 1: Search and list ===
+
+  search-basic-ja:
+    desc: "基本検索（日本語）"
+    prompt: "Claude Codeのスキルを探して"
+    assertions:
+      - has-numbered-list
+      - has-score
+      - has-security-indicator
+      - has-source-url
+      - has-skill-name
+    golden_assertions:
+      - has-purpose
+      - has-multiple-results
+      - id: results-relevant-ja
+        desc: "検索結果の関連性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、Claude Codeのスキルの検索結果リストが含まれていますか？
+          リストには番号付きのスキル名、説明、スコアが含まれている必要があります。
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  search-basic-en:
+    desc: "基本検索（英語）"
+    prompt: "Find Claude Code skills"
+    assertions:
+      - has-numbered-list
+      - has-score
+      - has-security-indicator
+      - has-source-url
+      - has-skill-name
+    golden_assertions:
+      - has-purpose
+      - has-multiple-results
+      - id: results-relevant-en
+        desc: "検索結果の関連性"
+        type: llm_eval
+        pattern: |
+          Does the output contain a list of Claude Code skills search results?
+          The list should include numbered skill names, descriptions, and scores.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  search-topic-testing:
+    desc: "トピック検索：テスト自動化"
+    prompt: "テスト自動化のスキルを検索して"
+    assertions:
+      - has-numbered-list
+      - has-score
+    golden_assertions:
+      - id: results-match-testing
+        desc: "テスト関連スキルの検出"
+        type: llm_eval
+        pattern: |
+          以下の検索結果リストに、テスト自動化に関連するスキルが含まれていますか？
+          （テスト、TDD、unit test、integration test等に関連するスキル）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  search-topic-deploy:
+    desc: "トピック検索：デプロイ"
+    prompt: "Search for deployment skills"
+    assertions:
+      - has-numbered-list
+      - has-score
+    golden_assertions:
+      - id: results-match-deploy
+        desc: "デプロイ関連スキルの検出"
+        type: llm_eval
+        pattern: |
+          Does the search results list contain skills related to deployment?
+          (deploy, CI/CD, release, shipping, etc.)
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  search-topic-review:
+    desc: "トピック検索：コードレビュー"
+    prompt: "コードレビュー用のスキルを探して"
+    assertions:
+      - has-numbered-list
+      - has-score
+    golden_assertions:
+      - id: results-match-review
+        desc: "レビュー関連スキルの検出"
+        type: llm_eval
+        pattern: |
+          以下の検索結果リストに、コードレビューに関連するスキルが含まれていますか？
+          （レビュー、PR、pull request等に関連するスキル）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  # === Phase 2: Detail display ===
+
+  detail-select-number:
+    desc: "詳細表示：番号指定"
+    prompt: "Claude Codeのスキルを探して、1番目のスキルの詳細を教えて"
+    assertions:
+      - has-numbered-list
+    golden_assertions:
+      - has-configuration
+      - has-workflow
+      - has-usage
+      - id: shows-detail-ja
+        desc: "詳細説明の完全性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、スキルの詳細説明が含まれていますか？
+          詳細には以下が含まれる必要があります:
+          - スキルの目的/説明
+          - 使い方/Usage
+          - 設定/Configuration（allowed-tools等）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  detail-explain-specific:
+    desc: "詳細表示：トップ結果の説明"
+    prompt: "Find skills for testing and explain how the top result works"
+    assertions:
+      - has-numbered-list
+    golden_assertions:
+      - has-configuration
+      - has-updated-date
+      - id: shows-workflow-en
+        desc: "ワークフロー説明の検出"
+        type: llm_eval
+        pattern: |
+          Does the output contain a detailed explanation of how the skill works?
+          It should include workflow/steps and configuration details.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass

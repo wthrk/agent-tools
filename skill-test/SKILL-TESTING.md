@@ -65,9 +65,12 @@ skill-test --verbose                # Detailed output
 | `--timeout` | config/60000 | Timeout per iteration (ms) |
 | `--threshold` | config/80 | Pass rate threshold (%) |
 | `--strict` | false | Error on missing files |
-| `--format` | `table` | Output: `table`, `json`, `csv` |
+| `--format` | `table` | Output: `table`, `json` |
 | `--filter` | - | Filter test IDs (substring match) |
 | `-v, --verbose` | false | Detailed output |
+| `--no-color` | false | Disable colored output |
+| `-p, --parallel` | CPU count | Parallel test executions (0 = sequential) |
+| `--no-error-log` | false | Disable error log file output |
 
 ### Exit Codes
 
@@ -111,7 +114,11 @@ strict: false  # true: ERROR (exit 1), false: WARN (stderr, continue)
 
 ## Test Case Format
 
-Test files are YAML with inline assertions:
+Two formats are supported: **List format** (simple) and **Scenarios format** (advanced).
+
+### List Format (Simple)
+
+Test files as a YAML list of test cases:
 
 ```yaml
 - id: test-001
@@ -142,6 +149,70 @@ Test files are YAML with inline assertions:
       language: javascript
       expect: exit_code:0
 ```
+
+### Scenarios Format (Advanced)
+
+Supports named assertions with reuse across scenarios:
+
+```yaml
+desc: "Search functionality tests"
+
+# Named assertions (reusable across scenarios)
+assertions:
+  has-numbered-list:
+    desc: "Contains numbered list"
+    type: regex
+    pattern: "\\d+\\."
+    expect: present
+
+  has-score:
+    desc: "Shows score in X/100 format"
+    type: regex
+    pattern: "\\d+/100"
+    expect: present
+
+  has-source-url:
+    type: regex
+    pattern: "https?://"
+    expect: present
+
+# Test scenarios (key = scenario ID)
+scenarios:
+  search-basic:
+    desc: "Basic search test"
+    prompt: "Search for Claude Code skills"
+    assertions:
+      - has-numbered-list      # Name reference
+      - has-score              # Name reference
+      - has-source-url         # Name reference
+
+  search-with-inline:
+    desc: "Search with inline assertion"
+    prompt: "Find testing skills"
+    iterations: 5
+    assertions:
+      - has-numbered-list      # Name reference
+      - id: inline-check       # Inline assertion
+        type: contains
+        pattern: "test"
+        expect: present
+    golden_assertions:
+      - id: quality-check
+        type: llm_eval
+        pattern: |
+          Does the output contain relevant search results?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+```
+
+**Scenarios format benefits:**
+- Reusable named assertions reduce duplication
+- Scenario ID comes from the key (no `id` field needed)
+- `desc` field for human-readable test names
+- Mix name references with inline assertions
 
 ---
 
@@ -335,6 +406,54 @@ EOF
     "failed_tests": 0
   }
 }
+```
+
+---
+
+## Error Log Files
+
+When tests fail, detailed logs are automatically saved to `.skill-test-logs/` in each skill directory.
+
+### Log File Location
+
+```
+my-skill/
+  .skill-test-logs/
+    20260130-143021-123-0000.json   # YYYYMMDD-HHMMSS-mmm-NNNN.json
+    20260130-143045-456-0001.json
+```
+
+### Log File Format
+
+Error logs use the same JSON schema as `--format json` output:
+
+```json
+{
+  "timestamp": "2026-01-30T14:30:21.123Z",
+  "skills": [{
+    "skill_name": "my-skill",
+    "skill_path": "./my-skill",
+    "tests": [{
+      "name": "test-001",
+      "prompt": "...",
+      "iterations": [...],
+      "summary": {...}
+    }],
+    "verdict": "Fail",
+    "error": null
+  }],
+  "summary": {...}
+}
+```
+
+### Controlling Error Logs
+
+```bash
+# Disable error log output
+skill-test --no-error-log
+
+# Add to .gitignore (recommended)
+echo ".skill-test-logs/" >> .gitignore
 ```
 
 ---

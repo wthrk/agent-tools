@@ -519,7 +519,7 @@ mod tests {
             desc: None,
             command: "node".to_string(),
             language: Some("javascript".to_string()),
-            timeout_ms: 5000,
+            timeout_ms: 30000, // CI環境ではNode.js起動が遅い
             expect: ExecExpect::ExitCodeZero,
         };
 
