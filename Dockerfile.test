@@ -1,0 +1,44 @@
+# Test environment for agent-tools
+# Simulates real installation: clone to ~/.agent-tools, build, install to bin/
+FROM rust:latest
+
+# Install additional tools
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user (non-root)
+RUN useradd -m -s /bin/bash testuser
+USER testuser
+
+# Set up environment (matches real installation)
+ENV HOME=/home/testuser
+ENV AGENT_TOOLS_HOME=/home/testuser/.agent-tools
+ENV PATH="/home/testuser/.agent-tools/bin:${PATH}"
+
+# Copy project to ~/.agent-tools (simulates git clone)
+COPY --chown=testuser:testuser . /home/testuser/.agent-tools
+WORKDIR /home/testuser/.agent-tools
+
+# Initialize git repo (required for agent-tools update)
+RUN git init && \
+    git config user.email "test@example.com" && \
+    git config user.name "Test User" && \
+    git add -A && \
+    git commit -m "Initial commit"
+
+# Build and install (simulates cargo make install)
+RUN cargo build --release -p agent-tools -p skill-test && \
+    mkdir -p bin && \
+    cp target/release/agent-tools bin/ && \
+    cp target/release/skill-test bin/
+
+# Create test project (simulates user's project)
+RUN mkdir -p /home/testuser/test-project/.git && \
+    mkdir -p /home/testuser/test-project/.claude
+
+# Run tests from project directory (not from repo)
+WORKDIR /home/testuser/test-project
+
+# Default command
+CMD ["cargo", "test", "-p", "agent-tools", "--manifest-path", "/home/testuser/.agent-tools/Cargo.toml"]

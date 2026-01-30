@@ -1,9 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "skill-test/crates/skill-test",
-    "skill-test/crates/skill-test-core",
-    "skill-tools/crates/skill-tools",
+    "crates/agent-tools",
+    "crates/skill-test",
+    "crates/skill-test-core",
+    "xtask",
 ]
 
 [workspace.package]
