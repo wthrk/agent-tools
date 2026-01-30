@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-01-30T00:51:25.990Z",
+  "skills": [
+    {
+      "skill_name": "testfile-format",
+      "skill_path": "/Users/ya/works/agent-tools/skill-test/crates/skill-test/tests/fixtures/testfile-format-skill",
+      "tests": [
+        {
+          "name": "greeting-test",
+          "desc": "Test greeting response",
+          "prompt": "Say hello",
+          "iterations": [
+            {
+              "iteration": 1,
+              "passed": false,
+              "latency_ms": 13390,
+              "output": "こんにちは！ソフトウェアエンジニアリングタスクをお手伝いするClaude Agentです。コードの修正、新機能の追加、バグの解決、コードの説明など、様々な開発作業でサポートさせていただきます。\n\n何かお手伝いできることはございますか？",
+              "output_hash": "ce9adc9708eed3a411d2aa6a2a4288b24292ff3b7f306351e8f1c7770befa037",
+              "called_tools": [],
+              "assertions": [
+                {
+                  "name": "has-hello",
+                  "desc": "Response contains Hello",
+                  "assertion_type": "contains",
+                  "pattern": "Hello",
+                  "passed": false,
+                  "error": null
+                },
+                {
+                  "name": "has-world",
+                  "desc": "Response contains World",
+                  "assertion_type": "contains",
+                  "pattern": "World",
+                  "passed": false,
+                  "error": null
+                },
+                {
+                  "name": "no-error",
+                  "desc": "No error message in response",
+                  "assertion_type": "contains",
+                  "pattern": "error",
+                  "passed": true,
+                  "error": null
+                }
+              ],
+              "golden_assertions": [
+                {
+                  "name": "line-count-check",
+                  "desc": "Response has reasonable length",
+                  "assertion_type": "line_count",
+                  "pattern": null,
+                  "passed": true,
+                  "error": null
+                }
+              ]
+            }
+          ],
+          "summary": {
+            "id": "greeting-test",
+            "iterations": 1,
+            "passed": 0,
+            "failed": 1,
+            "pass_rate": 0.0,
+            "verdict": "Fail",
+            "failures": [
+              "iteration 1: has-hello, has-world"
+            ],
+            "golden_failures": [],
+            "called_tools": []
+          }
+        }
+      ],
+      "verdict": "Fail",
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_skills": 1,
+    "passed_skills": 0,
+    "failed_skills": 1,
+    "total_tests": 1,
+    "passed_tests": 0,
+    "failed_tests": 1
+  }
+}

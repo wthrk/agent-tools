@@ -1,0 +1,50 @@
+# Test inline validation with llm_eval
+- id: validation-llm-eval-001
+  prompt: "Run /validation-test-skill to greet"
+  assertions:
+    - id: validation-llm-greeting
+      type: llm_eval
+      pattern: |
+        Does this output contain "GREETING_CHECK_PASS"? {{output}}
+      expect: pass
+
+# Test inline validation with regex
+- id: validation-regex-001
+  prompt: "Run /validation-test-skill"
+  assertions:
+    - id: validation-regex-hello
+      type: regex
+      pattern: "GREETING_CHECK_PASS.*Hello"
+      expect: present
+
+# Test inline validation with multiple assertions
+- id: validation-multiple-001
+  prompt: "Run /validation-test-skill"
+  assertions:
+    - id: validation-multi-contains
+      type: contains
+      pattern: "GREETING_CHECK_PASS"
+      expect: present
+    - id: validation-multi-no-error
+      type: contains
+      pattern: "error"
+      expect: absent
+
+# Test inline validation with llm_eval expect: fail
+- id: validation-llm-eval-fail-001
+  prompt: "Run /validation-test-skill to greet"
+  assertions:
+    - id: validation-llm-should-fail
+      type: llm_eval
+      pattern: |
+        Does this output contain "XYZNONEXISTENT"? {{output}}
+      expect: fail
+
+# Test validation assertion failure (assertion expects pattern that won't be present)
+- id: validation-failure-001
+  prompt: "Run /validation-test-skill"
+  assertions:
+    - id: validation-should-fail-contains
+      type: contains
+      pattern: "NONEXISTENT_PATTERN_XYZ"
+      expect: present

@@ -1,0 +1,44 @@
+# Test llm_eval with json_schema (JSON format is always enabled by default)
+- id: llm-eval-json-format-001
+  prompt: "Write a simple hello world function in Python. Reply in English only."
+  assertions:
+    - id: llm-json-code-quality
+      type: llm_eval
+      pattern: |
+        The following is the output from a coding assistant that was asked to write a hello world function.
+        Does the output discuss, describe, or mention a hello world implementation in any way?
+        Answer true if the output talks about hello world functionality, even if no code is shown.
+
+        Output:
+        {{output}}
+      expect: pass
+
+- id: llm-eval-json-schema-001
+  prompt: "Explain what a function is in programming. Reply in English only."
+  assertions:
+    - id: llm-json-explanation-quality
+      type: llm_eval
+      pattern: |
+        Evaluate if this is a clear and accurate explanation of what a function is.
+        {{output}}
+      expect: pass
+      json_schema:
+        type: object
+        required:
+          - result
+          - reason
+        properties:
+          result:
+            type: boolean
+          reason:
+            type: string
+
+- id: llm-eval-json-fail-001
+  prompt: "Write a hello world function in Python. Reply in English only."
+  assertions:
+    - id: llm-json-should-fail
+      type: llm_eval
+      pattern: |
+        Does this output contain Java code (not Python)?
+        {{output}}
+      expect: fail

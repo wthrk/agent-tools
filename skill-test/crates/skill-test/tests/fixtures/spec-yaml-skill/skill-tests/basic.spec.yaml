@@ -1,0 +1,7 @@
+- id: spec-001
+  prompt: "Run /spec-yaml-skill"
+  assertions:
+    - id: has-output
+      type: contains
+      pattern: "Spec"
+      expect: present

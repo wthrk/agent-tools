@@ -1,0 +1,49 @@
+[config]
+default_to_workspace = false
+
+[tasks.fmt]
+command = "cargo"
+args = ["fmt", "--all", "--check"]
+
+[tasks.check]
+command = "cargo"
+args = ["check", "--workspace", "--all-targets"]
+
+[tasks.clippy]
+command = "cargo"
+args = ["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]
+
+[tasks.deny]
+command = "cargo"
+args = ["deny", "check"]
+
+[tasks.test]
+command = "cargo"
+args = ["test", "--workspace"]
+
+[tasks.ci]
+dependencies = ["fmt", "check", "clippy", "deny", "test", "skill-test"]
+
+[tasks.skill-test]
+script = '''
+#!/bin/bash
+# Skip the leading "--" separator from cargo-make
+if [ "$1" = "--" ]; then
+  shift
+fi
+if [ $# -eq 0 ]; then
+  cargo run -p skill-test --release -- \
+    skills/* \
+    --iterations 1 \
+    --hook forced \
+    --threshold 80 \
+    --timeout 180000
+else
+  cargo run -p skill-test --release -- "$@"
+fi
+'''
+
+# Integration tests with limited parallelism to reduce CPU load
+[tasks.integration-test]
+command = "cargo"
+args = ["test", "-p", "skill-test", "--features", "integration-test", "--", "--test-threads=2"]

@@ -1,0 +1,24 @@
+# Tests for exec assertion failure cases
+
+- id: exec-failure-exit-code-001
+  prompt: "Run /exec-failure-test-skill to output JavaScript code that exits with code 1"
+  assertions:
+    - id: exec-exit-code-should-fail
+      type: exec
+      command: "node"
+      language: "javascript"
+      timeout_ms: 5000
+      # This should fail because the script exits with code 1
+      expect: "exit_code:0"
+
+- id: exec-failure-output-contains-001
+  prompt: "Run /exec-failure-test-skill to output JavaScript code"
+  assertions:
+    - id: exec-output-contains-should-fail
+      type: exec
+      command: "node"
+      language: "javascript"
+      timeout_ms: 5000
+      # This should fail because the output won't contain THIS_STRING_WONT_EXIST
+      expect:
+        output_contains: "THIS_STRING_WONT_EXIST"

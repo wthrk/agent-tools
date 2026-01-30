@@ -1,0 +1,11 @@
+- id: error-duplicate-id-001
+  prompt: "Run /error-duplicate-id-skill"
+  assertions:
+    - id: duplicate-id
+      type: contains
+      pattern: "hello"
+      expect: present
+    - id: duplicate-id
+      type: contains
+      pattern: "world"
+      expect: present

@@ -1,0 +1,15 @@
+# Test case that should fail contract assertion
+- id: failure-contract-001
+  prompt: "Run /failure-test-skill"
+  assertions:
+    # This should FAIL because the skill outputs ERROR
+    - id: should-fail-no-error
+      type: contains
+      pattern: "ERROR"
+      expect: absent
+
+    # This should PASS
+    - id: should-pass-has-output
+      type: regex
+      pattern: "."
+      expect: present

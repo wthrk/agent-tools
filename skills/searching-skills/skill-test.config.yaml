@@ -1,0 +1,6 @@
+# searching-skills test configuration
+# WebSearch を使うため hook: none、タイムアウトを延長
+hook: none
+timeout: 300000
+iterations: 1
+threshold: 100

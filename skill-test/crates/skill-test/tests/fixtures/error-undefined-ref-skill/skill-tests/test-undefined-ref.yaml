@@ -1,0 +1,16 @@
+# TestFile format with undefined assertion reference (should cause error)
+desc: "Undefined assertion reference error test"
+
+assertions:
+  existing-check:
+    type: contains
+    pattern: "hello"
+    expect: present
+
+scenarios:
+  undefined-ref-scenario:
+    desc: "Scenario referencing undefined assertion"
+    prompt: "Say hello"
+    assertions:
+      - existing-check
+      - nonexistent-assertion  # This doesn't exist

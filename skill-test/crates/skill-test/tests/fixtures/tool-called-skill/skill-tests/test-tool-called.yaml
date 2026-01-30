@@ -1,0 +1,27 @@
+- id: tool-called-001
+  prompt: "Run /tool-called-test-skill"
+  assertions:
+    # tool_called present (exact match) - Skill tool is always called
+    - id: tool-called-skill-present
+      type: tool_called
+      pattern: "Skill"
+      expect: present
+
+    # tool_called MCP pattern - MCP tools are not available in test
+    - id: tool-called-no-mcp
+      type: tool_called
+      pattern: "mcp__.*"
+      expect: absent
+  golden_assertions:
+    # These are "nice to have" - don't fail the test if violated
+    # tool_called with regex pattern
+    - id: tool-called-regex-read-or-glob
+      type: tool_called
+      pattern: "(Read|Glob)"
+      expect: present
+
+    # Ideally no Bash, but LLM might use it
+    - id: tool-called-no-bash
+      type: tool_called
+      pattern: "Bash"
+      expect: absent

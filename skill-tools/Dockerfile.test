@@ -1,0 +1,22 @@
+# Test environment for skill-tools
+FROM rust:1.85-bookworm
+
+# Install additional tools
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user (non-root)
+RUN useradd -m -s /bin/bash testuser
+USER testuser
+WORKDIR /home/testuser
+
+# Set up test environment
+ENV HOME=/home/testuser
+
+# Copy project files
+COPY --chown=testuser:testuser . /home/testuser/agent-tools
+WORKDIR /home/testuser/agent-tools
+
+# Default command: run all tests
+CMD ["cargo", "test", "-p", "skill-tools"]
