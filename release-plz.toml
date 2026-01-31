@@ -1,0 +1,16 @@
+[workspace]
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+dependencies_update = true
+git_tag_name = "v{{ version }}"
+git_release_enable = true
+git_release_name = "v{{ version }}"
+git_release_body = "{{ changelog }}"
+git_only = true
+release_always = false
+
+[[package]]
+name = "xtask"
+release = false
+publish = false
+changelog = false

@@ -80,7 +80,14 @@ fn cmd_check() -> Result<()> {
 }
 
 fn cmd_clippy() -> Result<()> {
-    cargo(&["clippy", "--workspace", "--all-targets", "--", "-D", "warnings"])
+    cargo(&[
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings",
+    ])
 }
 
 fn cmd_deny() -> Result<()> {
@@ -111,12 +118,20 @@ fn cmd_test_all() -> Result<()> {
 fn cmd_skill_test(args: &[String]) -> Result<()> {
     if args.is_empty() {
         cargo(&[
-            "run", "-p", "skill-test", "--release", "--",
+            "run",
+            "-p",
+            "skill-test",
+            "--release",
+            "--",
             "skills/*",
-            "--iterations", "1",
-            "--hook", "forced",
-            "--threshold", "80",
-            "--timeout", "180000",
+            "--iterations",
+            "1",
+            "--hook",
+            "forced",
+            "--threshold",
+            "80",
+            "--timeout",
+            "180000",
         ])
     } else {
         let mut cmd_args = vec!["run", "-p", "skill-test", "--release", "--"];
@@ -127,22 +142,53 @@ fn cmd_skill_test(args: &[String]) -> Result<()> {
 
 fn cmd_integration_test() -> Result<()> {
     cargo(&[
-        "test", "-p", "skill-test",
-        "--features", "integration-test",
-        "--", "--test-threads=2",
+        "test",
+        "-p",
+        "skill-test",
+        "--features",
+        "integration-test",
+        "--",
+        "--test-threads=2",
     ])
 }
 
 fn cmd_docker_test() -> Result<()> {
-    exec("docker", &["compose", "-f", "docker-compose.test.yaml", "run", "--rm", "test"])
+    exec(
+        "docker",
+        &[
+            "compose",
+            "-f",
+            "docker-compose.test.yaml",
+            "run",
+            "--rm",
+            "test",
+        ],
+    )
 }
 
 fn cmd_docker_test_build() -> Result<()> {
-    exec("docker", &["compose", "-f", "docker-compose.test.yaml", "build", "--no-cache", "test"])
+    exec(
+        "docker",
+        &[
+            "compose",
+            "-f",
+            "docker-compose.test.yaml",
+            "build",
+            "--no-cache",
+            "test",
+        ],
+    )
 }
 
 fn cmd_install() -> Result<()> {
-    cargo(&["build", "--release", "-p", "agent-tools", "-p", "skill-test"])?;
+    cargo(&[
+        "build",
+        "--release",
+        "-p",
+        "agent-tools",
+        "-p",
+        "skill-test",
+    ])?;
 
     let home = env::var_os("HOME").context("HOME environment variable not set")?;
     let bin_dir = PathBuf::from(home).join(".agent-tools/bin");

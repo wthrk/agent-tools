@@ -26,3 +26,6 @@ panic = "deny"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
+
+[workspace.dependencies]
+skill-test-core = { path = "crates/skill-test-core", version = "0.1.0" }

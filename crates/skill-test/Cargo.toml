@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+publish = false
 description = "CLI tool for testing Claude Code skills"
 
 [[bin]]
@@ -12,7 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-skill-test-core = { path = "../skill-test-core", version = "0.1.0" }
+skill-test-core = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 comfy-table = "7"
 serde = { version = "1", features = ["derive"] }
