@@ -25,3 +25,6 @@ Thumbs.db
 
 # Local binaries
 /bin/
+
+# Backups
+/backups/
