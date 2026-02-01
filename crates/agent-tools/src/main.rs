@@ -20,6 +20,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Build agent-tools and install to bin/
+    Build,
+
     /// Initialize agent-tools (create directories, setup PATH)
     Init,
 
@@ -64,6 +67,20 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum SkillCommands {
+    /// Create a new skill
+    New {
+        /// Name of the skill to create
+        name: String,
+
+        /// Auto-confirm adding to auto_deploy_skills (skip prompt)
+        #[arg(long, short = 'y')]
+        yes: bool,
+
+        /// Skip adding to auto_deploy_skills and linking
+        #[arg(long)]
+        no_auto_deploy: bool,
+    },
+
     /// List available skills (global)
     List,
 
@@ -133,6 +150,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Build => commands::build::run(),
         Commands::Init => commands::init::run(),
         Commands::Update => commands::update::run(),
         Commands::Status => commands::status::run(),
@@ -140,6 +158,20 @@ fn main() -> anyhow::Result<()> {
         Commands::Link { name } => commands::link::run(&name),
         Commands::Unlink { name } => commands::unlink::run(&name),
         Commands::Skill { command } => match command {
+            SkillCommands::New {
+                name,
+                yes,
+                no_auto_deploy,
+            } => {
+                let add_to_config = if no_auto_deploy {
+                    Some(false)
+                } else if yes {
+                    Some(true)
+                } else {
+                    None
+                };
+                commands::skill::new::run(&name, add_to_config)
+            }
             SkillCommands::List => commands::skill::list::run(),
             SkillCommands::Install { name, project } => {
                 commands::skill::install::run(&name, project.as_deref())
