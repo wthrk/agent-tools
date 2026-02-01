@@ -20,6 +20,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Build agent-tools and install to bin/
+    Build,
+
     /// Initialize agent-tools (create directories, setup PATH)
     Init,
 
@@ -133,6 +136,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Build => commands::build::run(),
         Commands::Init => commands::init::run(),
         Commands::Update => commands::update::run(),
         Commands::Status => commands::status::run(),

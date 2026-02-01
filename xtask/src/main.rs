@@ -24,7 +24,7 @@ enum Commands {
     Deny,
     /// Run cargo test
     Test,
-    /// Run all CI checks (fmt, check, clippy, deny, test, skill-test)
+    /// Run all CI checks (fmt, check, clippy, deny, test)
     Ci,
     /// Run all tests (ci + docker + integration)
     TestAll,
@@ -104,12 +104,12 @@ fn cmd_ci() -> Result<()> {
     cmd_clippy()?;
     cmd_deny()?;
     cmd_test()?;
-    cmd_skill_test(&[])?;
     Ok(())
 }
 
 fn cmd_test_all() -> Result<()> {
     cmd_ci()?;
+    cmd_skill_test(&[])?;
     cmd_docker_test()?;
     cmd_integration_test()?;
     Ok(())

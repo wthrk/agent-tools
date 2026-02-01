@@ -88,6 +88,7 @@ fn test_help_shows_subcommands() {
         .arg("--help")
         .assert()
         .success()
+        .stdout(predicate::str::contains("build"))
         .stdout(predicate::str::contains("init"))
         .stdout(predicate::str::contains("update"))
         .stdout(predicate::str::contains("status"))
@@ -96,6 +97,33 @@ fn test_help_shows_subcommands() {
         .stdout(predicate::str::contains("unlink"))
         .stdout(predicate::str::contains("skill"))
         .stdout(predicate::str::contains("cleanup"));
+}
+
+// =============================================================================
+// build tests
+// =============================================================================
+
+#[test]
+fn test_build_help() {
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["build", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Build agent-tools"));
+}
+
+#[test]
+fn test_build_no_agent_tools_home() {
+    let home = TempDir::new().unwrap();
+
+    // Point to non-existent agent-tools home
+    let mut cmd = Command::cargo_bin("agent-tools").unwrap();
+    cmd.env("AGENT_TOOLS_HOME", home.path().join("nonexistent"));
+    cmd.args(["build"]);
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::is_match(r"(?i)not found|error").unwrap());
 }
 
 // =============================================================================

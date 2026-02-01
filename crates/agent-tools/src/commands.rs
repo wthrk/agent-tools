@@ -1,3 +1,4 @@
+pub mod build;
 pub mod cleanup;
 pub mod init;
 pub mod link;
