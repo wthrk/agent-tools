@@ -51,7 +51,6 @@ impl Config {
         Ok(config)
     }
 
-    #[allow(dead_code)] // Used by add_auto_deploy_skill
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
@@ -68,13 +67,24 @@ impl Config {
     }
 }
 
+/// Maximum length for skill names to prevent filesystem issues.
+const MAX_SKILL_NAME_LENGTH: usize = 64;
+
 /// Validate a skill name.
 ///
-/// Valid names contain only `[A-Za-z0-9_-]`, are non-empty, and do not start with `-`.
-#[allow(dead_code)] // Will be used by skill new command
+/// Valid names contain only `[A-Za-z0-9_-]`, are non-empty, do not start with `-`,
+/// and are at most 64 characters long.
 pub fn validate_skill_name(name: &str) -> Result<()> {
     if name.is_empty() {
         bail!("Skill name cannot be empty");
+    }
+
+    if name.len() > MAX_SKILL_NAME_LENGTH {
+        bail!(
+            "Skill name cannot exceed {} characters: {}",
+            MAX_SKILL_NAME_LENGTH,
+            name
+        );
     }
 
     if name.starts_with('-') {
@@ -98,7 +108,6 @@ pub fn validate_skill_name(name: &str) -> Result<()> {
 ///
 /// If the config file does not exist, creates it with default values.
 /// If the skill is already in the list, does nothing.
-#[allow(dead_code)] // Will be used by skill new command
 pub fn add_auto_deploy_skill(config_path: &Path, skill_name: &str) -> Result<()> {
     let mut config = Config::load(config_path)?;
 

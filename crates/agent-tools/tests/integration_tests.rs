@@ -960,6 +960,20 @@ fn test_skill_new_creates_config_if_missing() {
 }
 
 #[test]
+fn test_skill_new_invalid_name_too_long() {
+    let env = TestEnv::new();
+
+    // Create a name that's 65 characters (exceeds 64 limit)
+    let long_name = "a".repeat(65);
+
+    env.cmd()
+        .args(["skill", "new", &long_name, "--no-auto-deploy"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::is_match(r"(?i)cannot exceed|too long|error").unwrap());
+}
+
+#[test]
 fn test_skill_new_help() {
     Command::cargo_bin("agent-tools")
         .unwrap()
