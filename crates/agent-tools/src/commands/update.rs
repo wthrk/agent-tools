@@ -3,6 +3,7 @@ use colored::Colorize;
 use std::fs;
 use std::process::Command;
 
+use crate::commands::build;
 use crate::paths;
 
 pub fn run() -> Result<()> {
@@ -85,50 +86,25 @@ pub fn run() -> Result<()> {
     }
     println!("  {} Git pull successful", "✓".green());
 
-    // Cargo build
-    println!("{} Building agent-tools...", "→".blue());
-    let build = Command::new("cargo")
-        .args(["build", "--release", "-p", "agent-tools"])
-        .current_dir(&agent_tools_home)
-        .output()
-        .context("Failed to run cargo build")?;
-
-    if !build.status.success() {
-        let stderr = String::from_utf8_lossy(&build.stderr);
-        let stdout = String::from_utf8_lossy(&build.stdout);
-        println!("{}", "Build failed!".red());
-        println!("{}{}", stdout, stderr);
-
-        // Try to restore backup
+    // Build and install using shared function
+    if let Err(e) = build::build_and_install() {
+        // Try to restore backup on build failure
         let backups_dir = paths::backups_dir()?;
         if let Ok(entries) = fs::read_dir(&backups_dir) {
             if let Some(latest) = entries.filter_map(|e| e.ok()).max_by_key(|e| e.path()) {
                 let backup_path = latest.path();
-                if let Err(e) = fs::copy(&backup_path, &current_bin) {
+                if let Err(restore_err) = fs::copy(&backup_path, &current_bin) {
                     bail!(
-                        "Restore failed: {}\nBackup is at: {}",
+                        "Build failed: {}\nRestore also failed: {}\nBackup is at: {}",
                         e,
+                        restore_err,
                         backup_path.display()
                     );
                 }
                 println!("{}", "Restored previous binary from backup.".yellow());
             }
         }
-
-        bail!("Build failed. Please fix the errors and try again.");
-    }
-    println!("  {} Build successful", "✓".green());
-
-    // Copy new binary to bin/
-    let target_bin = agent_tools_home.join("target/release/agent-tools");
-    if target_bin.exists() {
-        fs::create_dir_all(&bin_dir)?;
-        fs::copy(&target_bin, &current_bin).context("Failed to copy new binary to bin/")?;
-        println!(
-            "  {} Installed new binary to {}",
-            "✓".green(),
-            current_bin.display()
-        );
+        return Err(e);
     }
 
     println!();
