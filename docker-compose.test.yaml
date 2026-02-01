@@ -1,0 +1,30 @@
+services:
+  # Run all tests (unit + integration)
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: ["cargo", "test", "-p", "agent-tools", "--manifest-path", "/home/testuser/.agent-tools/Cargo.toml"]
+    volumes:
+      - cargo-cache:/home/testuser/.cargo/registry
+      - cargo-git:/home/testuser/.cargo/git
+    environment:
+      - RUST_BACKTRACE=1
+      - CARGO_TERM_COLOR=always
+
+  # Run integration tests only
+  integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    command: ["cargo", "test", "-p", "agent-tools", "--test", "integration_tests", "--manifest-path", "/home/testuser/.agent-tools/Cargo.toml"]
+    volumes:
+      - cargo-cache:/home/testuser/.cargo/registry
+      - cargo-git:/home/testuser/.cargo/git
+    environment:
+      - RUST_BACKTRACE=1
+      - CARGO_TERM_COLOR=always
+
+volumes:
+  cargo-cache:
+  cargo-git:
