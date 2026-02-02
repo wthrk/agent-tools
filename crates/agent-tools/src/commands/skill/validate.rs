@@ -84,7 +84,9 @@ fn parse_frontmatter(content: &str) -> Result<(serde_yaml::Value, &str), String>
 
     // Find closing ---
     let rest = &content[3..];
-    let closing_pos = rest.find("\n---").ok_or("Missing closing '---' in frontmatter")?;
+    let closing_pos = rest
+        .find("\n---")
+        .ok_or("Missing closing '---' in frontmatter")?;
 
     let frontmatter_str = &rest[..closing_pos];
     let body = &rest[closing_pos + 4..];
@@ -120,7 +122,10 @@ fn validate_name_format(name: &str) -> Result<(), String> {
 
     // Check for consecutive hyphens
     if name.contains("--") {
-        return Err(format!("Name cannot contain consecutive hyphens: '{}'", name));
+        return Err(format!(
+            "Name cannot contain consecutive hyphens: '{}'",
+            name
+        ));
     }
 
     Ok(())
@@ -372,11 +377,7 @@ pub fn run(path: Option<&str>, strict: bool) -> Result<i32> {
     if result.has_errors() {
         Ok(1)
     } else if result.has_warnings() {
-        if strict {
-            Ok(1)
-        } else {
-            Ok(2)
-        }
+        if strict { Ok(1) } else { Ok(2) }
     } else {
         Ok(0)
     }
@@ -472,7 +473,12 @@ description: A test skill
         let dir = TempDir::new().unwrap();
         let result = validate_skill(dir.path());
         assert!(result.has_errors());
-        assert!(result.errors.iter().any(|e| e.contains("SKILL.md not found")));
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| e.contains("SKILL.md not found"))
+        );
     }
 
     #[test]

@@ -92,16 +92,25 @@ pub fn validate_skill_name(name: &str) -> Result<()> {
 
     // Must start with lowercase alphanumeric
     if !name.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit()) {
-        bail!("Skill name must start with lowercase letter or number: {}", name);
+        bail!(
+            "Skill name must start with lowercase letter or number: {}",
+            name
+        );
     }
 
     // Must end with lowercase alphanumeric (if more than one char)
     if name.len() > 1 && !name.ends_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit()) {
-        bail!("Skill name must end with lowercase letter or number: {}", name);
+        bail!(
+            "Skill name must end with lowercase letter or number: {}",
+            name
+        );
     }
 
     // Only lowercase letters, numbers, and hyphens allowed
-    if !name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
         bail!(
             "Skill name can only contain lowercase letters, numbers, and hyphens: {}",
             name
