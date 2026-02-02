@@ -98,7 +98,13 @@ SKILL.md は目次として機能。詳細は別ファイルに分割。
 |--------|------|-----------|
 | 1 | メタデータ（name, description） | 常時 |
 | 2 | SKILL.md 本文 | トリガー時 |
-| 3 | references/scripts/assets | 必要時のみ |
+| 3 | references/scripts/assets | 必要時のみ（保証なし） |
+
+**設計原則:** Level 3 は読まれない可能性がある。
+- 確実に適用すべきルール → Level 2（SKILL.md本文）
+- 詳細・例・背景 → Level 3（references/）
+- 「〇〇を読め」という指示は無視される可能性あり
+- Level 3 が読まれなくてもスキルが正しく動作するよう設計
 
 ```markdown
 # SKILL.md
@@ -125,7 +131,7 @@ SKILL.md → examples.md
 
 ### 長いファイルには目次
 
-100行以上のファイルには先頭に目次を追加:
+100行以上のファイルには先頭に目次を追加。**サブセクションも含める**:
 
 ```markdown
 # API Reference
@@ -133,9 +139,15 @@ SKILL.md → examples.md
 ## Contents
 - Authentication
 - Core methods
+  - create
+  - read
+  - update
+  - delete
 - Error handling
 - Examples
 ```
+
+トップレベルのみの目次では部分読みされた際に詳細が見落とされる。
 
 ---
 
