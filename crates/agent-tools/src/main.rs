@@ -138,6 +138,16 @@ enum SkillCommands {
         #[arg(long)]
         project: Option<String>,
     },
+
+    /// Validate a skill
+    Validate {
+        /// Path to skill directory (default: current directory)
+        path: Option<String>,
+
+        /// Treat warnings as errors
+        #[arg(long)]
+        strict: bool,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -190,6 +200,10 @@ fn main() -> anyhow::Result<()> {
             }
             SkillCommands::Diff { name, project } => {
                 commands::skill::diff::run(&name, project.as_deref())
+            }
+            SkillCommands::Validate { path, strict } => {
+                let exit_code = commands::skill::validate::run(path.as_deref(), strict)?;
+                std::process::exit(exit_code);
             }
         },
         Commands::Cleanup => commands::cleanup::run(),
