@@ -899,20 +899,18 @@ fn test_skill_new_invalid_name_starts_with_hyphen() {
 }
 
 #[test]
-fn test_skill_new_valid_name_with_underscore() {
+fn test_skill_new_invalid_name_with_underscore() {
     let env = TestEnv::new();
 
     // Ensure claude skills dir exists
     fs::create_dir_all(env.claude_home.join("skills")).unwrap();
 
+    // Underscores are not allowed in skill names (only lowercase, numbers, hyphens)
     env.cmd()
         .args(["skill", "new", "my_skill_name", "--no-auto-deploy"])
         .assert()
-        .success();
-
-    // Verify skill was created
-    let skill_dir = env.agent_tools_home.join("skills/my_skill_name");
-    assert!(skill_dir.exists());
+        .failure()
+        .stderr(predicate::str::contains("lowercase"));
 }
 
 #[test]
