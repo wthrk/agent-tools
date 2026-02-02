@@ -1,0 +1,194 @@
+# creating-skills test cases
+desc: "スキル作成・検証スキルのテスト"
+
+# === 再利用可能なアサーション定義 ===
+assertions:
+  has-name-rules:
+    desc: "命名ルールの説明"
+    type: regex
+    pattern: "kebab|lowercase|[a-z0-9]|ハイフン"
+    expect: present
+
+  has-description-rules:
+    desc: "descriptionルールの説明"
+    type: regex
+    pattern: "Use when|trigger|条件|Third person|三人称"
+    expect: present
+
+  has-structure-info:
+    desc: "構造情報"
+    type: regex
+    pattern: "SKILL.md|README.md|AGENTS.md"
+    expect: present
+
+  has-validation-command:
+    desc: "バリデーションコマンド"
+    type: regex
+    pattern: "agent-tools skill validate|skill validate"
+    expect: present
+
+  has-progressive-disclosure:
+    desc: "Progressive Disclosure説明"
+    type: regex
+    pattern: "Level|レベル|Progressive|段階"
+    expect: present
+
+  has-frontmatter:
+    desc: "フロントマター説明"
+    type: regex
+    pattern: "frontmatter|name:|description:|---"
+    expect: present
+
+  has-exit-codes:
+    desc: "終了コード説明"
+    type: regex
+    pattern: "exit code|終了コード|0|1|2"
+    expect: present
+
+  has-error-warning:
+    desc: "エラー/警告の区別"
+    type: regex
+    pattern: "error|warning|エラー|警告"
+    expect: present
+
+  tool-called-bash:
+    desc: "Bashツール使用"
+    type: tool_called
+    pattern: "Bash"
+    expect: present
+
+# === シナリオ定義 ===
+scenarios:
+  # === スキル作成の基本 ===
+
+  explain-naming-rules:
+    desc: "命名ルールの説明"
+    prompt: "スキル名の命名規則を教えて"
+    assertions:
+      - has-name-rules
+    golden_assertions:
+      - id: naming-rules-complete
+        desc: "命名ルールの完全性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、スキル名の命名規則の説明が含まれていますか？
+          含まれるべき内容:
+          - 小文字英数字とハイフンのみ
+          - 先頭/末尾は英数字
+          - 最大64文字
+          - 動名詞形式推奨（例: processing-pdfs）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  explain-description-format:
+    desc: "description形式の説明"
+    prompt: "スキルのdescriptionはどう書くべき？"
+    assertions:
+      - has-description-rules
+    golden_assertions:
+      - id: description-format-complete
+        desc: "description形式の完全性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、descriptionの書き方の説明が含まれていますか？
+          含まれるべき内容:
+          - 「Use when」で使用条件を含める
+          - 三人称で記述
+          - 100-300文字推奨
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  # === バリデーション ===
+
+  validate-skill-command:
+    desc: "バリデーションコマンドの実行"
+    prompt: "skills/creating-skillsをvalidateして"
+    assertions:
+      - tool-called-bash
+    golden_assertions:
+      - has-exit-codes
+      - id: validation-executed
+        desc: "バリデーション実行確認"
+        type: llm_eval
+        pattern: |
+          以下の出力に、スキルのバリデーション結果が含まれていますか？
+          （agent-tools skill validateの実行結果、エラー/警告の有無など）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  explain-validation-errors:
+    desc: "バリデーションエラーの説明"
+    prompt: "スキルのバリデーションでどんなエラーがチェックされる？"
+    assertions:
+      - has-error-warning
+    golden_assertions:
+      - id: error-types-explained
+        desc: "エラータイプの説明"
+        type: llm_eval
+        pattern: |
+          以下の出力に、スキルバリデーションのエラーチェック項目が含まれていますか？
+          含まれるべき内容:
+          - SKILL.mdの存在確認
+          - フロントマターの形式
+          - 必須フィールド（name, description）
+          - 名前の形式/長さ
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  # === 構造とファイル ===
+
+  explain-structure:
+    desc: "ディレクトリ構造の説明"
+    prompt: "スキルのディレクトリ構造について教えて"
+    assertions:
+      - has-structure-info
+    golden_assertions:
+      - id: structure-complete
+        desc: "構造説明の完全性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、スキルディレクトリ構造の説明が含まれていますか？
+          含まれるべき内容:
+          - SKILL.md（必須）
+          - README.md（日本語）
+          - AGENTS.md
+          - references/（オプション）
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
+
+  explain-progressive-disclosure:
+    desc: "Progressive Disclosureの説明"
+    prompt: "スキルのProgressive Disclosureとは？"
+    assertions:
+      - has-progressive-disclosure
+    golden_assertions:
+      - id: progressive-disclosure-explained
+        desc: "Progressive Disclosure説明の完全性"
+        type: llm_eval
+        pattern: |
+          以下の出力に、Progressive Disclosureの説明が含まれていますか？
+          含まれるべき内容:
+          - Level 1: メタデータ（常に読まれる）
+          - Level 2: SKILL.md本文（トリガー時に読まれる）
+          - Level 3: references/等（読まれない可能性あり）
+          - 重要なルールはLevel 2に置くべき
+          YESまたはNOで回答してください。
+
+          出力:
+          {{output}}
+        expect: pass
