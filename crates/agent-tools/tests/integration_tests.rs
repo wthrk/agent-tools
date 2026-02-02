@@ -899,20 +899,18 @@ fn test_skill_new_invalid_name_starts_with_hyphen() {
 }
 
 #[test]
-fn test_skill_new_valid_name_with_underscore() {
+fn test_skill_new_invalid_name_with_underscore() {
     let env = TestEnv::new();
 
     // Ensure claude skills dir exists
     fs::create_dir_all(env.claude_home.join("skills")).unwrap();
 
+    // Underscores are not allowed in skill names (only lowercase, numbers, hyphens)
     env.cmd()
         .args(["skill", "new", "my_skill_name", "--no-auto-deploy"])
         .assert()
-        .success();
-
-    // Verify skill was created
-    let skill_dir = env.agent_tools_home.join("skills/my_skill_name");
-    assert!(skill_dir.exists());
+        .failure()
+        .stderr(predicate::str::contains("lowercase"));
 }
 
 #[test]
@@ -983,4 +981,220 @@ fn test_skill_new_help() {
         .stdout(predicate::str::contains("Create a new skill"))
         .stdout(predicate::str::contains("--yes"))
         .stdout(predicate::str::contains("--no-auto-deploy"));
+}
+
+// =============================================================================
+// skill validate tests
+// =============================================================================
+
+#[test]
+fn test_skill_validate_help() {
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Validate"))
+        .stdout(predicate::str::contains("--strict"));
+}
+
+#[test]
+fn test_skill_validate_valid_skill_exit_code_0() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A valid test skill
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(0)
+        .stdout(predicate::str::contains("Errors: 0"))
+        .stdout(predicate::str::contains("Warnings: 0"));
+}
+
+#[test]
+fn test_skill_validate_with_errors_exit_code_1() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: Invalid_Name
+description: A test skill with invalid name
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("Errors: 1"));
+}
+
+#[test]
+fn test_skill_validate_warnings_only_exit_code_2() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A valid test skill
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+    // Create a forbidden file to trigger a warning
+    fs::write(dir.path().join("CHANGELOG.md"), "# Changelog").unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stdout(predicate::str::contains("Errors: 0"))
+        .stdout(predicate::str::contains("Warnings: 1"));
+}
+
+#[test]
+fn test_skill_validate_strict_warnings_exit_code_1() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A valid test skill
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+    // Create a forbidden file to trigger a warning
+    fs::write(dir.path().join("CHANGELOG.md"), "# Changelog").unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args([
+            "skill",
+            "validate",
+            "--strict",
+            dir.path().to_str().unwrap(),
+        ])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("Errors: 0"))
+        .stdout(predicate::str::contains("Warnings: 1"));
+}
+
+#[test]
+fn test_skill_validate_missing_skill_md_exit_code_1() {
+    let dir = TempDir::new().unwrap();
+    // No SKILL.md created
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("SKILL.md not found"));
+}
+
+#[test]
+fn test_skill_validate_disallowed_frontmatter_key() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A test skill
+author: Someone
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(1)
+        .stdout(predicate::str::contains("author"));
+}
+
+#[test]
+fn test_skill_validate_hooks_key_allowed() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A test skill with hooks
+hooks:
+  post-install: ./setup.sh
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(0)
+        .stdout(predicate::str::contains("Errors: 0"));
+}
+
+#[test]
+fn test_skill_validate_reference_depth_warning() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A test skill
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    // Create references directory with a markdown file that links to another md file
+    let references_dir = dir.path().join("references");
+    fs::create_dir(&references_dir).unwrap();
+    fs::write(
+        references_dir.join("guide.md"),
+        r#"# Guide
+
+See [other doc](other.md) for more info.
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stdout(predicate::str::contains("Reference depth > 1"));
 }

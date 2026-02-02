@@ -94,6 +94,18 @@ my-skill/
 
 SKILL.md は目次として機能。詳細は別ファイルに分割。
 
+| レベル | 内容 | ロード条件 |
+|--------|------|-----------|
+| 1 | メタデータ（name, description） | 常時 |
+| 2 | SKILL.md 本文 | トリガー時 |
+| 3 | references/scripts/assets | 必要時のみ（保証なし） |
+
+**設計原則:** Level 3 は読まれない可能性がある。
+- 確実に適用すべきルール → Level 2（SKILL.md本文）
+- 詳細・例・背景 → Level 3（references/）
+- 「〇〇を読め」という指示は無視される可能性あり
+- Level 3 が読まれなくてもスキルが正しく動作するよう設計
+
 ```markdown
 # SKILL.md
 
@@ -119,7 +131,7 @@ SKILL.md → examples.md
 
 ### 長いファイルには目次
 
-100行以上のファイルには先頭に目次を追加:
+100行以上のファイルには先頭に目次を追加。**サブセクションも含める**:
 
 ```markdown
 # API Reference
@@ -127,9 +139,15 @@ SKILL.md → examples.md
 ## Contents
 - Authentication
 - Core methods
+  - create
+  - read
+  - update
+  - delete
 - Error handling
 - Examples
 ```
+
+トップレベルのみの目次では部分読みされた際に詳細が見落とされる。
 
 ---
 
@@ -261,6 +279,91 @@ TIMEOUT = 47  # Why 47?
 | 時間依存の情報 | "old patterns" セクションに移動 |
 | 用語の不一致 | 1つの用語を一貫して使用 |
 | 深いネスト参照 | 1レベルのみ |
+| 一人称使用 | 三人称で記述（"Creates..." など） |
+| 曖昧な description | 具体的なキーワードとトリガー条件を含める |
+
+---
+
+## Claude の読み込み挙動
+
+### 観測された傾向
+
+- 大きなファイルを `head -100` 等でプレビューする傾向がある
+- ネストされた参照は不完全に読まれる傾向がある
+
+### 対策
+
+| 問題 | 対策 |
+|------|------|
+| 部分読み込み | 100行超は先頭に**目次必須** |
+| ネスト参照 | **1レベル深度のみ** |
+| 重要情報見落とし | **ファイル先頭に配置** |
+
+---
+
+## 静的解析
+
+### コマンド
+
+```bash
+agent-tools skill validate ./my-skill/
+```
+
+### 検証項目
+
+**エラー（終了コード 1）:**
+- SKILL.md 存在
+- Frontmatter 形式（`---` 区切り）
+- YAML 解析
+- 必須フィールド（name, description）
+- name 形式・長さ（64文字以内）
+- description 禁止文字（`<` `>`）・長さ（1024文字以内）
+- 許可されていないキー
+
+**警告（終了コード 2）:**
+- 行数超過（500行超）
+- 語数超過（5000語超）
+- 禁止ファイル存在（CHANGELOG.md 等）
+- 参照深度超過（1レベル超）
+- 目次なし（100行超のファイル）
+
+### 終了コード
+
+| コード | 意味 |
+|--------|------|
+| 0 | 成功 |
+| 1 | エラーあり |
+| 2 | 警告のみ（`--strict` で 1） |
+
+---
+
+## 多言語対応
+
+### ファイル構造
+
+```
+skill-name/
+├── SKILL.md    # 英語
+├── README.md   # 日本語（SKILL.md の翻訳）
+└── AGENTS.md   # 同期指示
+```
+
+### AGENTS.md の目的
+
+Claude にスキル全体と README.md の同期を指示:
+
+```markdown
+# Agent Instructions
+
+README.md is the Japanese explanation of this skill.
+When updating SKILL.md or any related files, also update README.md to keep them in sync.
+```
+
+### README.md の役割
+
+- SKILL.md と同等の構造で日本語説明
+- セクション: 概要 → 使用条件 → ワークフロー → ヒント
+- SKILL.md 更新時は同期必須
 
 ---
 

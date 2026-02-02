@@ -1,0 +1,292 @@
+# creating-skills test cases
+desc: "スキル作成・検証スキルのテスト - 生成物の品質評価"
+
+assertions:
+  has-valid-name-suggestion:
+    desc: "有効なスキル名の提案"
+    type: regex
+    pattern: "[a-z0-9]+(-[a-z0-9]+)*"
+    expect: present
+
+  has-use-when:
+    desc: "Use whenを含む"
+    type: contains
+    pattern: "Use when"
+    expect: present
+
+  has-kebab-case-mention:
+    desc: "kebab-caseの言及"
+    type: regex
+    pattern: "kebab|ケバブ|[a-z]+-[a-z]+"
+    expect: present
+
+  has-frontmatter:
+    desc: "フロントマター"
+    type: regex
+    pattern: '---\s*\nname:|```yaml\s*\nname:'
+    expect: present
+
+  identifies-underscore:
+    desc: "アンダースコア問題の指摘"
+    type: regex
+    pattern: "underscore|アンダースコア|_"
+    expect: present
+
+  has-error-or-warning:
+    desc: "エラーまたは警告の指摘"
+    type: regex
+    pattern: "error|warning|エラー|警告|問題|違反"
+    expect: present
+
+  has-valid-output:
+    desc: "有効な出力"
+    type: regex
+    pattern: '\bvalid\b|有効|Errors?: 0|エラー.*0|問題.*なし|すべて.*満た'
+    expect: present
+
+scenarios:
+  # === バリデーション（有効なスキル） ===
+
+  validate-valid-skill:
+    desc: "有効なスキルのバリデーション"
+    prompt: |
+      以下のSKILL.mdをバリデートして。チェックする項目は以下のみ：
+
+      1. name: 小文字kebab-case（[a-z0-9]+(-[a-z0-9]+)*）、最大64文字
+      2. description: 「Use when」を含む、最大1024文字
+      3. frontmatter keys: 許可されたキーのみ（name, description, license, allowed-tools, metadata, user-invocable, disable-model-invocation, argument-hint, hooks）
+
+      これらを満たせば「有効（valid）」と判定する。内容の詳細さや推奨事項は判定に含めない。
+
+      ---
+      name: pdf-analyzer
+      description: Analyzes PDF files and extracts text content. Use when working with PDF documents.
+      ---
+
+      ## Overview
+
+      Analyzes PDF files.
+    assertions:
+      - has-valid-output
+    golden_assertions:
+      - id: valid-skill-passes
+        desc: "有効なスキルがパス"
+        type: llm_eval
+        pattern: |
+          出力でこのスキルが有効（エラーなし）と判定されていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  # === バリデーション（エラーあり） ===
+
+  validate-invalid-name:
+    desc: "無効な名前のバリデーション"
+    prompt: |
+      以下のSKILL.mdをバリデートして。具体的な問題点を列挙して指摘すること。
+
+      チェックルール:
+      1. name: 小文字kebab-case（[a-z0-9]+(-[a-z0-9]+)*）、アンダースコア禁止
+      2. description: 「Use when」を含む
+
+      ---
+      name: My_Awesome_Helper
+      description: Helps with stuff. Use when you need help.
+      ---
+
+      ## Overview
+      Helps with things.
+    assertions:
+      - has-error-or-warning
+      - identifies-underscore
+    golden_assertions:
+      - id: name-error-detected
+        desc: "名前エラー検出"
+        type: llm_eval
+        pattern: |
+          出力で名前「My_Awesome_Helper」がルール違反（アンダースコア、大文字）として指摘されていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  validate-missing-use-when:
+    desc: "Use when欠落のバリデーション"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のSKILL.mdをバリデートして:
+
+      ---
+      name: code-helper
+      description: Helps with code stuff
+      ---
+
+      ## Overview
+      A code helper.
+    assertions:
+      - has-error-or-warning
+    golden_assertions:
+      - id: use-when-missing-detected
+        desc: "Use when欠落検出"
+        type: llm_eval
+        pattern: |
+          出力でdescriptionに「Use when」が欠落していることが指摘されていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  # === 名前の修正 ===
+
+  fix-name-underscore:
+    desc: "アンダースコア名の修正"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のスキル名を修正して:
+      name: my_awesome_skill
+
+      問題点を指摘し、正しいkebab-case形式を提案して。
+    assertions:
+      - identifies-underscore
+      - has-valid-name-suggestion
+    golden_assertions:
+      - id: correct-fix
+        desc: "正しい修正案"
+        type: llm_eval
+        pattern: |
+          出力にアンダースコアが禁止である説明と、「my-awesome-skill」のようなkebab-case形式の修正案が含まれていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  fix-name-uppercase:
+    desc: "大文字名の修正"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のスキル名を修正して:
+      name: MySkillHelper
+
+      問題点を指摘し、正しい形式を提案して。
+    assertions:
+      - has-kebab-case-mention
+      - has-valid-name-suggestion
+    golden_assertions:
+      - id: uppercase-fix
+        desc: "大文字修正案"
+        type: llm_eval
+        pattern: |
+          出力に大文字が禁止である説明と、小文字kebab-case形式（例: my-skill-helper）の修正案が含まれていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  fix-name-consecutive-hyphens:
+    desc: "連続ハイフン名の修正"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のスキル名を修正して:
+      name: my--awesome--skill
+
+      問題点を指摘し、正しい形式を提案して。
+    assertions:
+      - has-error-or-warning
+      - has-valid-name-suggestion
+    golden_assertions:
+      - id: consecutive-hyphen-fix
+        desc: "連続ハイフン修正案"
+        type: llm_eval
+        pattern: |
+          出力に連続ハイフンが禁止である説明と、正しい形式（例: my-awesome-skill）の修正案が含まれていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  # === description改善 ===
+
+  improve-description:
+    desc: "descriptionの改善"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のdescriptionを改善して:
+      description: A helper for code
+
+      ルールでは「[機能説明]. Use when [条件].」形式が求められる。
+      正しい形式を提案して。
+    assertions:
+      - has-use-when
+    golden_assertions:
+      - id: description-improved
+        desc: "description改善"
+        type: llm_eval
+        pattern: |
+          出力に「Use when」を含む改善されたdescriptionが提案されていますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  # === 構造提案 ===
+
+  suggest-frontmatter:
+    desc: "フロントマター提案"
+    prompt: |
+      以下のスキルのフロントマターを提案して:
+
+      スキル名: log-analyzer
+      機能: ログファイルを解析してエラーパターンを検出する
+
+      出力形式:
+      ---
+      name: [kebab-case名]
+      description: [機能説明]. Use when [使用条件].
+      ---
+
+      提案するフロントマターを上記形式で出力して。
+    assertions:
+      - has-frontmatter
+      - has-use-when
+    golden_assertions:
+      - id: frontmatter-valid
+        desc: "フロントマターの妥当性"
+        type: llm_eval
+        pattern: |
+          出力に「name: log-analyzer」と「Use when」を含むフロントマターがありますか？
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass
+
+  # === 複合問題 ===
+
+  fix-multiple-issues:
+    desc: "複数問題の修正"
+    prompt: |
+      creating-skillsスキルのルールに従って、以下のSKILL.mdの問題をすべて指摘し修正版を提示して:
+
+      ---
+      name: CodeHelper_v2
+      description: I help you with code
+      author: John
+      ---
+
+      # Code Helper
+
+      問題点:
+      1. 名前にアンダースコアと大文字
+      2. descriptionが一人称で「Use when」がない
+      3. 「author」は許可されていないキー
+    assertions:
+      - has-error-or-warning
+      - has-valid-name-suggestion
+    golden_assertions:
+      - id: all-issues-identified
+        desc: "全問題の指摘"
+        type: llm_eval
+        pattern: |
+          出力で以下の3つの問題がすべて指摘されていますか？
+          1. 名前のフォーマット違反
+          2. descriptionの形式問題
+          3. 許可されていないキー「author」
+          YESまたはNOで回答。
+          出力:
+          {{output}}
+        expect: pass

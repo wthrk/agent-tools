@@ -72,8 +72,11 @@ const MAX_SKILL_NAME_LENGTH: usize = 64;
 
 /// Validate a skill name.
 ///
-/// Valid names contain only `[A-Za-z0-9_-]`, are non-empty, do not start with `-`,
-/// and are at most 64 characters long.
+/// Valid names match pattern `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`:
+/// - Only lowercase letters, numbers, and hyphens
+/// - Must start and end with alphanumeric
+/// - No consecutive hyphens
+/// - At most 64 characters long
 pub fn validate_skill_name(name: &str) -> Result<()> {
     if name.is_empty() {
         bail!("Skill name cannot be empty");
@@ -87,18 +90,36 @@ pub fn validate_skill_name(name: &str) -> Result<()> {
         );
     }
 
-    if name.starts_with('-') {
-        bail!("Skill name cannot start with '-': {}", name);
-    }
-
-    if !name
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-    {
+    // Must start with lowercase alphanumeric
+    if !name.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit()) {
         bail!(
-            "Skill name can only contain letters, numbers, underscores, and hyphens: {}",
+            "Invalid skill name '{}': must start with lowercase letter or number",
             name
         );
+    }
+
+    // Must end with lowercase alphanumeric (if more than one char)
+    if name.len() > 1 && !name.ends_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit()) {
+        bail!(
+            "Skill name must end with lowercase letter or number: {}",
+            name
+        );
+    }
+
+    // Only lowercase letters, numbers, and hyphens allowed
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        bail!(
+            "Skill name can only contain lowercase letters, numbers, and hyphens: {}",
+            name
+        );
+    }
+
+    // No consecutive hyphens
+    if name.contains("--") {
+        bail!("Skill name cannot contain consecutive hyphens: {}", name);
     }
 
     Ok(())

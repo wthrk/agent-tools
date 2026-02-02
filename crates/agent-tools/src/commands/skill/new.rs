@@ -7,22 +7,96 @@ use crate::commands::link;
 use crate::config::{add_auto_deploy_skill, validate_skill_name};
 use crate::paths;
 
-/// SKILL.md template
+/// Convert kebab-case to Title Case
+/// Example: "my-skill" -> "My Skill"
+fn to_title_case(name: &str) -> String {
+    name.split('-')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(first) => first.to_uppercase().chain(chars).collect(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// SKILL.md template (English)
 fn skill_template(name: &str) -> String {
+    let title = to_title_case(name);
     format!(
         r#"---
 name: {name}
-description: TODO: Add description
+description: "[TODO: What it does]. Use when [TODO: trigger conditions]."
 allowed-tools: []
 user-invocable: true
 argument-hint:
 ---
 
-# {name}
+# {title}
 
-TODO: Add skill instructions
+## Overview
+
+TODO: Describe what this skill does in 1-2 sentences.
+
+## When to Use
+
+Use this skill when:
+
+- TODO: First trigger condition
+- TODO: Second trigger condition
+
+## The Process
+
+1. TODO: First step
+2. TODO: Second step
+3. TODO: Third step
+
+## Tips
+
+- TODO: Add helpful tips for using this skill effectively
 "#
     )
+}
+
+/// README.md template (Japanese)
+fn readme_template(name: &str) -> String {
+    let title = to_title_case(name);
+    format!(
+        r#"# {title}
+
+## 概要
+
+TODO: このスキルが何をするか1-2文で説明してください。
+
+## 使用条件
+
+以下の場合にこのスキルを使用してください:
+
+- TODO: 最初のトリガー条件
+- TODO: 2番目のトリガー条件
+
+## ワークフロー
+
+1. TODO: 最初のステップ
+2. TODO: 2番目のステップ
+3. TODO: 3番目のステップ
+
+## ヒント
+
+- TODO: このスキルを効果的に使用するためのヒントを追加してください
+"#
+    )
+}
+
+/// AGENTS.md template
+fn agents_template() -> &'static str {
+    r#"# Agent Instructions
+
+README.md is the Japanese explanation of this skill.
+When updating SKILL.md or any related files, also update README.md to keep them in sync.
+"#
 }
 
 /// Ask user a yes/no question with default.
@@ -75,6 +149,16 @@ pub fn run(name: &str, add_to_config: Option<bool>) -> Result<()> {
     fs::write(&skill_md_path, skill_template(name))
         .with_context(|| format!("Failed to create SKILL.md: {}", skill_md_path.display()))?;
 
+    // Create README.md
+    let readme_path = skill_dir.join("README.md");
+    fs::write(&readme_path, readme_template(name))
+        .with_context(|| format!("Failed to create README.md: {}", readme_path.display()))?;
+
+    // Create AGENTS.md
+    let agents_path = skill_dir.join("AGENTS.md");
+    fs::write(&agents_path, agents_template())
+        .with_context(|| format!("Failed to create AGENTS.md: {}", agents_path.display()))?;
+
     println!(
         "{} Created skill '{}' at {}",
         "✓".green(),
@@ -110,4 +194,47 @@ pub fn run(name: &str, add_to_config: Option<bool>) -> Result<()> {
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_to_title_case() {
+        assert_eq!(to_title_case("my-skill"), "My Skill");
+        assert_eq!(to_title_case("skill"), "Skill");
+        assert_eq!(to_title_case("my-awesome-skill"), "My Awesome Skill");
+        assert_eq!(to_title_case("a"), "A");
+        assert_eq!(to_title_case("a-b-c"), "A B C");
+    }
+
+    #[test]
+    fn test_skill_template_contains_required_sections() {
+        let template = skill_template("test-skill");
+        assert!(template.contains("name: test-skill"));
+        assert!(template.contains("# Test Skill"));
+        assert!(template.contains("## Overview"));
+        assert!(template.contains("## When to Use"));
+        assert!(template.contains("## The Process"));
+        assert!(template.contains("## Tips"));
+    }
+
+    #[test]
+    fn test_readme_template_contains_required_sections() {
+        let template = readme_template("test-skill");
+        assert!(template.contains("# Test Skill"));
+        assert!(template.contains("## 概要"));
+        assert!(template.contains("## 使用条件"));
+        assert!(template.contains("## ワークフロー"));
+        assert!(template.contains("## ヒント"));
+    }
+
+    #[test]
+    fn test_agents_template() {
+        let template = agents_template();
+        assert!(template.contains("README.md"));
+        assert!(template.contains("SKILL.md"));
+        assert!(template.contains("sync"));
+    }
 }

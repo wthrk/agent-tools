@@ -13,6 +13,7 @@ dependencies = [
  "colored",
  "directories",
  "predicates",
+ "regex",
  "serde",
  "serde_yaml",
  "tempfile",

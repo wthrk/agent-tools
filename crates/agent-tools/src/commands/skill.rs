@@ -5,3 +5,4 @@ pub mod list;
 pub mod new;
 pub mod remove;
 pub mod update;
+pub mod validate;
