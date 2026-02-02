@@ -93,7 +93,7 @@ pub fn validate_skill_name(name: &str) -> Result<()> {
     // Must start with lowercase alphanumeric
     if !name.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit()) {
         bail!(
-            "Skill name must start with lowercase letter or number: {}",
+            "Invalid skill name '{}': must start with lowercase letter or number",
             name
         );
     }

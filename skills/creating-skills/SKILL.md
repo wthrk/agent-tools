@@ -77,7 +77,7 @@ Creates and maintains Claude Code skills. Supports three modes: create, modify, 
 - Gerund form: `processing-pdfs`, `analyzing-data`
 - Alternatives: `pdf-processing`, `process-pdfs`
 - Avoid: `helper`, `utils`, `documents`
-- Regex: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`, max 64 chars
+- Regex: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`, max 64 chars, no consecutive hyphens
 
 ### description
 

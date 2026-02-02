@@ -64,7 +64,7 @@ Claude Codeスキルを作成・メンテナンスします。作成、修正、
 - 動名詞形式: `processing-pdfs`, `analyzing-data`
 - 代替: `pdf-processing`, `process-pdfs`
 - 避ける: `helper`, `utils`, `documents`
-- 正規表現: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`、最大64文字
+- 正規表現: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`、最大64文字、連続ハイフン禁止
 
 ### description
 

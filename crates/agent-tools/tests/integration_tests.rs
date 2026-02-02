@@ -1163,3 +1163,38 @@ hooks:
         .code(0)
         .stdout(predicate::str::contains("Errors: 0"));
 }
+
+#[test]
+fn test_skill_validate_reference_depth_warning() {
+    let dir = TempDir::new().unwrap();
+    fs::write(
+        dir.path().join("SKILL.md"),
+        r#"---
+name: test-skill
+description: A test skill
+---
+
+# Test Skill
+"#,
+    )
+    .unwrap();
+
+    // Create references directory with a markdown file that links to another md file
+    let references_dir = dir.path().join("references");
+    fs::create_dir(&references_dir).unwrap();
+    fs::write(
+        references_dir.join("guide.md"),
+        r#"# Guide
+
+See [other doc](other.md) for more info.
+"#,
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-tools")
+        .unwrap()
+        .args(["skill", "validate", dir.path().to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stdout(predicate::str::contains("Reference depth > 1"));
+}
