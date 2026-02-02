@@ -1,3 +1,4 @@
+use crate::config::validate_skill_name;
 use anyhow::Result;
 use colored::Colorize;
 use regex::Regex;
@@ -5,10 +6,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::sync::LazyLock;
-
-/// Regex for validating skill name format
-static NAME_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$").unwrap());
 
 /// Regex for finding markdown links (including anchors like foo.md#section)
 static MD_LINK_REGEX: LazyLock<Regex> =
@@ -24,6 +21,7 @@ const ALLOWED_KEYS: &[&str] = &[
     "user-invocable",
     "disable-model-invocation",
     "argument-hint",
+    "hooks",
 ];
 
 /// Forbidden files that should not exist in a skill directory
@@ -38,9 +36,6 @@ const MAX_LINES: usize = 500;
 
 /// Maximum word count before warning
 const MAX_WORDS: usize = 5000;
-
-/// Maximum name length
-const MAX_NAME_LENGTH: usize = 64;
 
 /// Maximum description length
 const MAX_DESCRIPTION_LENGTH: usize = 1024;
@@ -98,37 +93,9 @@ fn parse_frontmatter(content: &str) -> Result<(serde_yaml::Value, &str), String>
     Ok((yaml, body))
 }
 
-/// Validate skill name format
+/// Validate skill name format using the shared validator from config module
 fn validate_name_format(name: &str) -> Result<(), String> {
-    if name.is_empty() {
-        return Err("Name cannot be empty".to_string());
-    }
-
-    if name.len() > MAX_NAME_LENGTH {
-        return Err(format!(
-            "Name exceeds {} characters ({} chars)",
-            MAX_NAME_LENGTH,
-            name.len()
-        ));
-    }
-
-    // Regex: ^[a-z0-9][a-z0-9-]*[a-z0-9]$ or ^[a-z0-9]$
-    if !NAME_REGEX.is_match(name) {
-        return Err(format!(
-            "Name must match pattern ^[a-z0-9][a-z0-9-]*[a-z0-9]$ or ^[a-z0-9]$: '{}'",
-            name
-        ));
-    }
-
-    // Check for consecutive hyphens
-    if name.contains("--") {
-        return Err(format!(
-            "Name cannot contain consecutive hyphens: '{}'",
-            name
-        ));
-    }
-
-    Ok(())
+    validate_skill_name(name).map_err(|e| e.to_string())
 }
 
 /// Validate description
