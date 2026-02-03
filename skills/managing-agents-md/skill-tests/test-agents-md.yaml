@@ -1,0 +1,133 @@
+# managing-agents-md test cases
+desc: "AGENTS.md管理スキルのテスト"
+
+assertions:
+  has-project-overview:
+    desc: "Project Overviewセクションの存在"
+    type: regex
+    pattern: "## (Project )?Overview"
+    expect: present
+
+  has-technology-stack:
+    desc: "Technology Stackセクションの存在"
+    type: regex
+    pattern: "## Technology Stack"
+    expect: present
+
+  has-commands:
+    desc: "Development Commandsセクションの存在"
+    type: regex
+    pattern: "## (Development )?Commands"
+    expect: present
+
+  has-code-block:
+    desc: "コードブロックの存在"
+    type: contains
+    pattern: "```"
+    expect: present
+
+  has-never-do:
+    desc: "Never Doの存在"
+    type: regex
+    pattern: "Never Do|never|禁止"
+    expect: present
+
+  has-rust-mention:
+    desc: "Rust言及"
+    type: regex
+    pattern: "Rust|cargo"
+    expect: present
+
+  has-node-mention:
+    desc: "Node言及"
+    type: regex
+    pattern: "Node|npm|pnpm|yarn"
+    expect: present
+
+scenarios:
+  generate-rust-agents:
+    desc: "Rustプロジェクト用AGENTS.md生成"
+    prompt: |
+      ファイルは作成せず、以下の情報に基づいてAGENTS.mdの内容をテキストで出力してください。
+
+      プロジェクト情報:
+      - 言語: Rust 1.85
+      - ビルド: cargo build --release
+      - テスト: cargo test
+
+      以下の形式で出力:
+
+      # Agent Instructions
+
+      ## Project Overview
+      [説明]
+
+      ## Technology Stack
+      - Language: Rust 1.85
+      - Package Manager: Cargo
+
+      ## Development Commands
+      ```bash
+      cargo build --release
+      cargo test
+      ```
+
+      ## Boundaries
+      ### Never Do
+      - [禁止事項]
+    assertions:
+      - has-project-overview
+      - has-technology-stack
+      - has-commands
+      - has-code-block
+      - has-rust-mention
+
+  generate-node-agents:
+    desc: "Node.jsプロジェクト用AGENTS.md生成"
+    prompt: |
+      ファイルは作成せず、以下の情報に基づいてAGENTS.mdの内容をテキストで出力してください。
+
+      プロジェクト情報:
+      - 言語: TypeScript
+      - パッケージマネージャー: npm
+      - テスト: npm test
+      - ビルド: npm run build
+
+      以下の形式で出力:
+
+      # Agent Instructions
+
+      ## Project Overview
+      [説明]
+
+      ## Technology Stack
+      - Language: TypeScript
+      - Package Manager: npm
+
+      ## Development Commands
+      ```bash
+      npm install
+      npm test
+      npm run build
+      ```
+
+      ## Boundaries
+      ### Never Do
+      - [禁止事項]
+    assertions:
+      - has-project-overview
+      - has-technology-stack
+      - has-commands
+      - has-code-block
+      - has-node-mention
+
+  check-boundaries-content:
+    desc: "Boundariesセクションの内容確認"
+    prompt: |
+      AGENTS.mdのBoundariesセクションには「Never Do」として以下を含めるべきです:
+      - シークレットやクレデンシャルをコミットしない
+      - 保護されたファイルを変更しない
+
+      Rustプロジェクトの場合、追加で含めるべき「Never Do」項目を3つ挙げてください。
+    assertions:
+      - has-never-do
