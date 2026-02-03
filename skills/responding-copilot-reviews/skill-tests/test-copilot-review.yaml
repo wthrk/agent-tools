@@ -1,0 +1,76 @@
+# responding-copilot-reviews test cases
+desc: "Copilotレビュー対応スキルのテスト"
+
+assertions:
+  shows-gh-api:
+    desc: "gh apiコマンドの表示"
+    type: contains
+    pattern: "gh api"
+    expect: present
+
+  mentions-verification:
+    desc: "検証/批判的評価への言及"
+    type: regex
+    pattern: "(verify|verifi|critical|批判|検証|false positive|誤検知)"
+    expect: present
+
+  mentions-codex:
+    desc: "Codexとの議論への言及"
+    type: regex
+    pattern: "(codex|Codex|external review|外部レビュー|second opinion|セカンドオピニオン)"
+    expect: present
+
+  mentions-subagent:
+    desc: "サブエージェントへの言及"
+    type: regex
+    pattern: "(subagent|サブエージェント|Task tool|並列|parallel)"
+    expect: present
+
+  mentions-direct-reply:
+    desc: "直接返信への言及"
+    type: regex
+    pattern: "(reply|replies|返信|直接)"
+    expect: present
+
+  warns-anti-pattern:
+    desc: "アンチパターンへの警告"
+    type: regex
+    pattern: "(anti-pattern|アンチパターン|blind|無批判|don't|しない)"
+    expect: present
+
+  mentions-comment-id:
+    desc: "COMMENT_IDへの言及"
+    type: regex
+    pattern: "(COMMENT_ID|comment.*id|コメントID)"
+    expect: present
+
+scenarios:
+  basic-flow:
+    desc: "基本フローの説明"
+    prompt: |
+      PR #123 のCopilotレビューコメントに対応したいです。
+      どのような手順で進めればよいですか？
+    assertions:
+      - shows-gh-api
+      - mentions-verification
+      - mentions-codex
+      - mentions-direct-reply
+      - mentions-subagent
+
+  warns-blind-acceptance:
+    desc: "無批判受け入れへの警告"
+    prompt: |
+      Copilotの指摘を全部直してしまいたいのですが、
+      効率的なやり方を教えてください。
+    assertions:
+      - warns-anti-pattern
+      - mentions-verification
+
+  explains-reply-method:
+    desc: "返信方法の説明"
+    prompt: |
+      Copilotレビューコメントへの返信方法を教えてください。
+    assertions:
+      - shows-gh-api
+      - mentions-direct-reply
+      - mentions-comment-id
