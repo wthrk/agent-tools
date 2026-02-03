@@ -29,6 +29,9 @@ enum Commands {
     /// Update agent-tools (git pull && cargo build)
     Update,
 
+    /// Rebase current work onto latest main
+    Rebase,
+
     /// Show current status (links, config validation)
     Status,
 
@@ -163,6 +166,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Build => commands::build::run(),
         Commands::Init => commands::init::run(),
         Commands::Update => commands::update::run(),
+        Commands::Rebase => commands::rebase::run(),
         Commands::Status => commands::status::run(),
         Commands::Sync { dry_run, prune } => commands::sync::run(dry_run, prune),
         Commands::Link { name } => commands::link::run(&name),
