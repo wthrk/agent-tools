@@ -173,7 +173,7 @@ Output validation report with score and recommendations.
 **6 Core Sections (prioritized):**
 1. Commands - build, test, run commands
 2. Testing - framework, coverage, special setup
-3. Project Structure - directory layout
+3. Directory Structure - directory layout
 4. Code Style - formatting, patterns, linters
 5. Git Workflow - branch strategy, commit conventions
 6. Boundaries - what not to touch

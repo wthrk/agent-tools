@@ -118,7 +118,7 @@ AGENTS.mdが存在すれば内容を表示、存在しなければ作成を提�
 
 1. **Commands** - ビルド、テスト、実行コマンド
 2. **Testing** - フレームワーク、カバレッジ、特別なセットアップ
-3. **Project Structure** - ディレクトリ構成
+3. **Directory Structure** - ディレクトリ構成
 4. **Code Style** - フォーマット、パターン、リンター
 5. **Git Workflow** - ブランチ戦略、コミット規約
 6. **Boundaries** - 触ってはいけないもの
