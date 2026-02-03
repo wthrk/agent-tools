@@ -1,6 +1,6 @@
 ---
 name: responding-copilot-reviews
-description: Responds to GitHub Copilot review comments on PRs. Use this skill proactively when the user mentions "copilot review", "copilot レビュー", or asks to address Copilot feedback on a PR.
+description: Responds to GitHub Copilot review comments on PRs. Use when addressing review comments or reviewing PRs.
 allowed-tools:
   - Bash
   - Read

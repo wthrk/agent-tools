@@ -1,7 +1,11 @@
 ---
 name: jj
-description: Manages Jujutsu (jj) repositories with change-centric workflows. Use when working with jj repos, creating changes, rebasing, or pushing.
-allowed-tools: Bash, Read, Glob, Grep
+description: Manages Jujutsu (jj) version control. Use when editing files or performing repository operations.
+allowed-tools:
+  - Bash(jj*)
+  - Read
+  - Glob
+  - Grep
 user-invocable: true
 argument-hint: "[new|describe|status|log|diff|edit|split|squash|abandon|restore|bookmark|rebase|push|undo]"
 ---
