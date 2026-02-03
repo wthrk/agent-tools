@@ -1,4 +1,4 @@
-# skill-tools configuration
+# agent-tools configuration
 config_version: 1
 
 # Skills to auto-deploy to ~/.claude/skills/
@@ -6,9 +6,17 @@ auto_deploy_skills:
   - searching-skills
   - creating-skills
   - jj
+  - managing-agents-md
+  - responding-copilot-reviews
 
-# Manage ~/.claude/settings.json (link to ~/.skill-tools/settings.json)
+# Manage ~/.claude/settings.json (link to ~/.agent-tools/settings.json)
 manage_settings: true
 
-# Manage ~/.claude/plugins/ (link to ~/.skill-tools/plugins/)
+# Manage ~/.claude/plugins/ (link to ~/.agent-tools/plugins/)
 manage_plugins: false
+
+# Manage ~/.claude/CLAUDE.md (link to ~/.agent-tools/global/CLAUDE.md)
+manage_claude_md: true
+
+# Manage ~/.claude/hooks/ (link to ~/.agent-tools/global/hooks/)
+manage_hooks: true

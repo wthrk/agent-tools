@@ -1,8 +1,16 @@
 #!/bin/bash
+# block-tail-head.sh - tail/head/grepコマンドをブロック
+# PreToolUse (Bash) フック用
+
 set -euo pipefail
 
+# jqがない場合はスキップ
+if ! command -v jq &> /dev/null; then
+    exit 0
+fi
+
 input=$(cat)
-command=$(echo "$input" | jq -r '.tool_input.command // empty')
+command=$(echo "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || echo "")
 
 # Extract first word of the command (the actual command being run)
 first_word=$(echo "$command" | awk '{print $1}')

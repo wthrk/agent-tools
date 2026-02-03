@@ -12,13 +12,21 @@ pub struct Config {
     #[serde(default)]
     pub auto_deploy_skills: Vec<String>,
 
-    /// Manage ~/.claude/settings.json (link to ~/.skill-tools/settings.json)
+    /// Manage ~/.claude/settings.json (link to ~/.agent-tools/settings.json)
     #[serde(default)]
     pub manage_settings: bool,
 
-    /// Manage ~/.claude/plugins/ (link to ~/.skill-tools/plugins/)
+    /// Manage ~/.claude/plugins/ (link to ~/.agent-tools/plugins/)
     #[serde(default)]
     pub manage_plugins: bool,
+
+    /// Manage ~/.claude/CLAUDE.md (link to ~/.agent-tools/global/CLAUDE.md)
+    #[serde(default)]
+    pub manage_claude_md: bool,
+
+    /// Manage ~/.claude/hooks/ (link to ~/.agent-tools/global/hooks/)
+    #[serde(default)]
+    pub manage_hooks: bool,
 }
 
 fn default_config_version() -> u32 {
@@ -32,6 +40,8 @@ impl Default for Config {
             auto_deploy_skills: Vec::new(),
             manage_settings: false,
             manage_plugins: false,
+            manage_claude_md: false,
+            manage_hooks: false,
         }
     }
 }
