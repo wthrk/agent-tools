@@ -5,6 +5,7 @@ config_version: 1
 auto_deploy_skills:
   - searching-skills
   - creating-skills
+  - jj
 
 # Manage ~/.claude/settings.json (link to ~/.skill-tools/settings.json)
 manage_settings: true

@@ -1,0 +1,353 @@
+# jj skill test cases
+desc: "jj スキルのテスト - 15コマンド"
+
+# === 再利用可能なアサーション定義 ===
+assertions:
+  shows-jj-command:
+    desc: "jj コマンドを表示"
+    type: regex
+    pattern: "jj\\s+(new|describe|status|log|diff|edit|split|squash|abandon|restore|bookmark|rebase|git|undo|op)"
+    expect: present
+
+  warns-interactive:
+    desc: "インタラクティブ警告"
+    type: regex
+    pattern: "(interactive|--path|BLOCK|block|WARNING|警告)"
+    expect: present
+
+  shows-code-block:
+    desc: "コードブロック表示"
+    type: regex
+    pattern: "```"
+    expect: present
+
+  mentions-operation-log:
+    desc: "operation log への言及"
+    type: regex
+    pattern: "(op log|operation|undo)"
+    expect: present
+
+  mentions-bookmark:
+    desc: "bookmark への言及"
+    type: regex
+    pattern: "(bookmark|ブックマーク)"
+    expect: present
+
+# === シナリオ定義 ===
+scenarios:
+  # === Core Commands ===
+
+  jj-new:
+    desc: "新しい変更を作成"
+    prompt: "/jj new"
+    assertions:
+      - shows-jj-command
+      - shows-code-block
+    golden_assertions:
+      - id: explains-new
+        desc: "new コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain creating a new change with jj new?
+          It should mention creating empty change or starting new work.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-describe:
+    desc: "メッセージを設定"
+    prompt: "/jj describe"
+    assertions:
+      - shows-jj-command
+      - shows-code-block
+    golden_assertions:
+      - id: explains-describe
+        desc: "describe コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain setting or updating a change message with jj describe?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-status:
+    desc: "ファイルレベル状態表示"
+    prompt: "/jj status"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-status
+        desc: "status コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain showing file-level status with jj status?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-log:
+    desc: "変更履歴表示"
+    prompt: "/jj log"
+    # Note: log is read-only, may execute immediately or show explanation
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-log
+        desc: "log コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain viewing change history with jj log?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-diff:
+    desc: "差分表示"
+    prompt: "/jj diff"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-diff
+        desc: "diff コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain showing changes/diff with jj diff?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  # === Navigation ===
+
+  jj-edit:
+    desc: "タスク切り替え"
+    prompt: "/jj edit"
+    assertions:
+      - shows-jj-command
+      - shows-code-block
+    golden_assertions:
+      - id: explains-navigation
+        desc: "ナビゲーション説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain using jj edit for task switching or navigation?
+          It should mention @- or @+ or switching between changes/revisions.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  # === Organization ===
+
+  jj-split:
+    desc: "変更を分割"
+    prompt: "/jj split"
+    assertions:
+      - shows-jj-command
+      - warns-interactive
+    golden_assertions:
+      - id: explains-split
+        desc: "split コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain splitting a change with jj split?
+          It should warn about interactive mode or mention --path flag.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-squash:
+    desc: "親にマージ"
+    prompt: "/jj squash"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-squash
+        desc: "squash コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain merging/squashing into parent with jj squash?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-abandon:
+    desc: "変更を破棄"
+    prompt: "/jj abandon"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-abandon
+        desc: "abandon コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain discarding/abandoning a change with jj abandon?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-restore:
+    desc: "ファイル復元"
+    prompt: "/jj restore"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-restore
+        desc: "restore コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain restoring files from a revision with jj restore?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  # === Sync ===
+
+  jj-bookmark:
+    desc: "ブックマーク管理"
+    prompt: "/jj bookmark"
+    assertions:
+      - shows-jj-command
+      - mentions-bookmark
+    golden_assertions:
+      - id: explains-bookmark
+        desc: "bookmark コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain managing bookmarks with jj bookmark?
+          It should mention set, list, or push.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-rebase:
+    desc: "リベース"
+    prompt: "/jj rebase"
+    assertions:
+      - shows-jj-command
+      - shows-code-block
+    golden_assertions:
+      - id: warns-scope
+        desc: "scope 警告"
+        type: llm_eval
+        pattern: |
+          Does the output mention rebase scope or warn about unintended changes being rebased?
+          It should mention -s or -d flags or scope considerations.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-push:
+    desc: "リモートにpush"
+    prompt: "/jj push"
+    assertions:
+      - shows-jj-command
+      - mentions-bookmark
+    golden_assertions:
+      - id: explains-push
+        desc: "push コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain pushing to remote with jj git push?
+          It should mention bookmark requirement.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  jj-undo:
+    desc: "操作取り消し"
+    prompt: "/jj undo"
+    assertions:
+      - shows-jj-command
+      - mentions-operation-log
+    golden_assertions:
+      - id: explains-undo
+        desc: "undo コマンドの説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain undoing operations with jj undo or op log?
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  # === Workflow Scenarios ===
+
+  workflow-start-task:
+    desc: "ワークフロー：タスク開始"
+    prompt: "/jj new - 新しいタスクを開始したい"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: shows-workflow
+        desc: "ワークフロー説明"
+        type: llm_eval
+        pattern: |
+          Does the output show a workflow for starting a new task?
+          It should include jj new main or similar.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  workflow-parallel-dev:
+    desc: "ワークフロー：並行開発"
+    prompt: "/jj edit - 複数のタスクを並行して作業する方法を教えて"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: explains-parallel
+        desc: "並行開発の説明"
+        type: llm_eval
+        pattern: |
+          Does the output explain parallel development workflow?
+          It should mention switching between tasks or jj edit.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
+
+  workflow-concurrent-agents:
+    desc: "ワークフロー：複数エージェント同時実行"
+    prompt: "複数のClaude Codeを同時に動かしたい"
+    assertions:
+      - shows-jj-command
+    golden_assertions:
+      - id: recommends-workspace
+        desc: "workspace を推奨"
+        type: llm_eval
+        pattern: |
+          Does the output recommend using jj workspace for multiple agents?
+          It should mention workspace add or separate directories for concurrent execution.
+          Answer YES or NO.
+
+          Output:
+          {{output}}
+        expect: pass
