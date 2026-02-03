@@ -4,7 +4,7 @@ use std::fs;
 use std::process::Command;
 
 use crate::commands::build;
-use crate::commands::vcs::{Vcs, detect_vcs};
+use crate::commands::vcs::{Vcs, check_git_clean, check_jj_clean, detect_vcs};
 use crate::paths;
 
 pub fn run() -> Result<()> {
@@ -40,8 +40,21 @@ pub fn run() -> Result<()> {
         // Try to restore backup on build failure
         let backups_dir = paths::backups_dir()?;
         if let Ok(entries) = fs::read_dir(&backups_dir) {
-            if let Some(latest) = entries.filter_map(|e| e.ok()).max_by_key(|e| e.path()) {
+            // Filter to agent-tools_* files only, ignore .DS_Store etc.
+            // Select by modification time for reliable latest selection
+            if let Some(latest) = entries
+                .filter_map(|e| e.ok())
+                .filter(|e| {
+                    e.file_name()
+                        .to_str()
+                        .is_some_and(|n| n.starts_with("agent-tools_"))
+                        && e.path().is_file()
+                })
+                .max_by_key(|e| e.metadata().ok().and_then(|m| m.modified().ok()))
+            {
                 let backup_path = latest.path();
+                // Ensure bin directory exists before restoring
+                fs::create_dir_all(&bin_dir)?;
                 if let Err(restore_err) = fs::copy(&backup_path, &current_bin) {
                     bail!(
                         "Build failed: {}\nRestore also failed: {}\nBackup is at: {}",
@@ -63,32 +76,9 @@ pub fn run() -> Result<()> {
 }
 
 fn run_jj_update(agent_tools_home: &std::path::Path) -> Result<()> {
-    // Check for uncommitted changes
+    // Check for uncommitted changes using jj diff --stat (machine-parseable)
     println!("{} Checking for uncommitted changes...", "→".blue());
-    let status = Command::new("jj")
-        .args(["status"])
-        .current_dir(agent_tools_home)
-        .output()
-        .context("Failed to run jj status")?;
-
-    if !status.status.success() {
-        let stderr = String::from_utf8_lossy(&status.stderr);
-        bail!(
-            "Failed to check jj status in {}:\n{}\nIs this a jj repository?",
-            agent_tools_home.display(),
-            stderr
-        );
-    }
-
-    // jj status shows "Working copy changes:" if there are changes
-    let status_output = String::from_utf8_lossy(&status.stdout);
-    if status_output.contains("Working copy changes:") {
-        bail!(
-            "Uncommitted changes detected in {}\n\
-             Please commit or abandon changes before updating.",
-            agent_tools_home.display()
-        );
-    }
+    check_jj_clean(agent_tools_home)?;
     println!("  {} No uncommitted changes", "✓".green());
 
     // Backup current binary
@@ -149,31 +139,7 @@ fn run_jj_update(agent_tools_home: &std::path::Path) -> Result<()> {
 fn run_git_update(agent_tools_home: &std::path::Path) -> Result<()> {
     // Check for uncommitted changes
     println!("{} Checking for uncommitted changes...", "→".blue());
-    let status = Command::new("git")
-        .args(["status", "--porcelain"])
-        .current_dir(agent_tools_home)
-        .output()
-        .context("Failed to run git status")?;
-
-    if !status.status.success() {
-        let stdout = String::from_utf8_lossy(&status.stdout);
-        let stderr = String::from_utf8_lossy(&status.stderr);
-        bail!(
-            "Failed to check git status in {}:\n{}{}\nIs this a git repository?",
-            agent_tools_home.display(),
-            stdout,
-            stderr
-        );
-    }
-
-    let status_output = String::from_utf8_lossy(&status.stdout);
-    if !status_output.trim().is_empty() {
-        bail!(
-            "Uncommitted changes detected in {}\n\
-             Please commit or stash changes before updating.",
-            agent_tools_home.display()
-        );
-    }
+    check_git_clean(agent_tools_home)?;
     println!("  {} No uncommitted changes", "✓".green());
 
     // Backup current binary

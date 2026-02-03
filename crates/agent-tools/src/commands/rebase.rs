@@ -2,7 +2,7 @@ use anyhow::{Context, Result, bail};
 use colored::Colorize;
 use std::process::Command;
 
-use crate::commands::vcs::{Vcs, detect_vcs};
+use crate::commands::vcs::{Vcs, check_git_clean, check_jj_clean, detect_vcs};
 use crate::paths;
 
 pub fn run() -> Result<()> {
@@ -37,6 +37,11 @@ pub fn run() -> Result<()> {
 }
 
 fn run_jj_rebase(agent_tools_home: &std::path::Path) -> Result<()> {
+    // Check for uncommitted changes first
+    println!("{} Checking for uncommitted changes...", "→".blue());
+    check_jj_clean(agent_tools_home)?;
+    println!("  {} No uncommitted changes", "✓".green());
+
     // jj git fetch
     println!("{} Running jj git fetch...", "→".blue());
     let fetch = Command::new("jj")
@@ -79,31 +84,7 @@ fn run_jj_rebase(agent_tools_home: &std::path::Path) -> Result<()> {
 fn run_git_rebase(agent_tools_home: &std::path::Path) -> Result<()> {
     // Check for uncommitted changes
     println!("{} Checking for uncommitted changes...", "→".blue());
-    let status = Command::new("git")
-        .args(["status", "--porcelain"])
-        .current_dir(agent_tools_home)
-        .output()
-        .context("Failed to run git status")?;
-
-    if !status.status.success() {
-        let stdout = String::from_utf8_lossy(&status.stdout);
-        let stderr = String::from_utf8_lossy(&status.stderr);
-        bail!(
-            "Failed to check git status in {}:\n{}{}\nIs this a git repository?",
-            agent_tools_home.display(),
-            stdout,
-            stderr
-        );
-    }
-
-    let status_output = String::from_utf8_lossy(&status.stdout);
-    if !status_output.trim().is_empty() {
-        bail!(
-            "Uncommitted changes detected in {}\n\
-             Please commit or stash changes before rebasing.",
-            agent_tools_home.display()
-        );
-    }
+    check_git_clean(agent_tools_home)?;
     println!("  {} No uncommitted changes", "✓".green());
 
     // git fetch origin

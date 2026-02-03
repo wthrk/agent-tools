@@ -1,3 +1,5 @@
+#![deny(warnings)]
+
 use clap::{Parser, Subcommand};
 
 mod commands;
