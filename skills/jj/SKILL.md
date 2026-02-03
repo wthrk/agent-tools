@@ -456,7 +456,7 @@ jj workspace forget agent-a
 ## Common Workflows
 
 **Quick patterns:**
-- New work: `jj git fetch && jj new main -m "feat: X" && jj bookmark set X && jj git push -b X`
+- New work: `jj git fetch && jj new main -m "feat: X" && jj bookmark set X && jj git push --bookmark X`
 - Switch task: `jj edit <rev>`
 - Update from main: `jj git fetch && jj rebase -d main`
 

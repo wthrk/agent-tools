@@ -139,7 +139,7 @@ jj workspace add ../agent-b --rev main -m "Agent B task"
 ## 一般的なワークフロー
 
 **クイックパターン:**
-- 新規作業: `jj git fetch && jj new main -m "feat: X" && jj bookmark set X && jj git push -b X`
+- 新規作業: `jj git fetch && jj new main -m "feat: X" && jj bookmark set X && jj git push --bookmark X`
 - タスク切り替え: `jj edit <rev>`
 - mainから更新: `jj git fetch && jj rebase -d main`
 
