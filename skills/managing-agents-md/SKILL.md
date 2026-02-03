@@ -1,6 +1,6 @@
 ---
 name: managing-agents-md
-description: Creates and manages AGENTS.md files following the standard format adopted by 60,000+ OSS projects. Use when initializing a new project for AI agents, documenting project conventions, or validating existing AGENTS.md files.
+description: Creates and manages AGENTS.md files following a widely used standard format for AI coding agents. Use when initializing a new project for AI agents, documenting project conventions, or validating existing AGENTS.md files.
 allowed-tools:
   - Bash
   - Read
