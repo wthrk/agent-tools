@@ -408,6 +408,7 @@ cd ../agent-b && claude "..."
 
 # Cleanup
 jj workspace forget agent-a
+jj workspace forget agent-b
 ```
 
 **When required:**

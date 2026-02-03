@@ -20,6 +20,7 @@ jj log -r 'working_copies()'
 
 # Cleanup
 jj workspace forget agent-a
+jj workspace forget agent-b
 ```
 
 ## Recovery from File Mixing
@@ -43,9 +44,9 @@ jj abandon                        # Abandon the split-off change
 # 4. Last resort: abandon entire change
 jj abandon <contaminated-change>
 jj new main -m "Clean restart"
-
-# 5. Prevent recurrence: use workspaces
 ```
+
+**Prevent recurrence:** Use workspaces for concurrent agents.
 
 ## When to Use Workspaces
 
