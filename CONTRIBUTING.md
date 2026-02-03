@@ -37,7 +37,7 @@ jj bookmark delete feature/xxx
 | `feat!` / `fix!` | major |
 | `docs`, `chore`, `refactor`, `test`, `ci` | なし |
 
-**scope**: `agent-tools`, `skill-test`, `skill-test-core`, `xtask`, `workspace`, `ci`, `deps`
+**scope**: `agent-tools`, `xtask`, `workspace`, `ci`, `deps`
 
 ## Release
 

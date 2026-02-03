@@ -24,16 +24,12 @@ enum Commands {
     Deny,
     /// Run cargo test
     Test,
-    /// Run all CI checks (fmt, check, clippy, deny, test)
+    /// Validate all skills in skills/
+    SkillValidate,
+    /// Run all CI checks (fmt, check, clippy, deny, test, skill-validate)
     Ci,
     /// Run all tests (ci + docker + integration)
     TestAll,
-    /// Run skill tests
-    SkillTest {
-        /// Arguments to pass to skill-test
-        #[arg(trailing_var_arg = true)]
-        args: Vec<String>,
-    },
     /// Run integration tests
     IntegrationTest,
     /// Run docker tests
@@ -61,9 +57,9 @@ fn run(command: Commands) -> Result<()> {
         Commands::Clippy => cmd_clippy(),
         Commands::Deny => cmd_deny(),
         Commands::Test => cmd_test(),
+        Commands::SkillValidate => cmd_skill_validate(),
         Commands::Ci => cmd_ci(),
         Commands::TestAll => cmd_test_all(),
-        Commands::SkillTest { args } => cmd_skill_test(&args),
         Commands::IntegrationTest => cmd_integration_test(),
         Commands::DockerTest => cmd_docker_test(),
         Commands::DockerTestBuild => cmd_docker_test_build(),
@@ -98,53 +94,68 @@ fn cmd_test() -> Result<()> {
     cargo(&["test", "--workspace"])
 }
 
+fn cmd_skill_validate() -> Result<()> {
+    // Find all skill directories
+    let skills_dir = PathBuf::from("skills");
+    if !skills_dir.exists() {
+        eprintln!("skills/ directory not found, skipping skill validation");
+        return Ok(());
+    }
+
+    let entries = std::fs::read_dir(&skills_dir)
+        .with_context(|| format!("Failed to read {}", skills_dir.display()))?;
+
+    let mut has_error = false;
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() && path.join("SKILL.md").exists() {
+            let path_str = path.to_string_lossy();
+            if let Err(e) = cargo(&[
+                "run",
+                "-p",
+                "agent-tools",
+                "--quiet",
+                "--",
+                "skill",
+                "validate",
+                &path_str,
+                "--strict",
+            ]) {
+                eprintln!("Validation failed for {}: {e}", path.display());
+                has_error = true;
+            }
+        }
+    }
+
+    if has_error {
+        bail!("One or more skills failed validation");
+    }
+    Ok(())
+}
+
 fn cmd_ci() -> Result<()> {
     cmd_fmt()?;
     cmd_check()?;
     cmd_clippy()?;
     cmd_deny()?;
     cmd_test()?;
+    cmd_skill_validate()?;
     Ok(())
 }
 
 fn cmd_test_all() -> Result<()> {
     cmd_ci()?;
-    cmd_skill_test(&[])?;
     cmd_docker_test()?;
     cmd_integration_test()?;
     Ok(())
-}
-
-fn cmd_skill_test(args: &[String]) -> Result<()> {
-    if args.is_empty() {
-        cargo(&[
-            "run",
-            "-p",
-            "skill-test",
-            "--release",
-            "--",
-            "skills/*",
-            "--iterations",
-            "1",
-            "--hook",
-            "forced",
-            "--threshold",
-            "80",
-            "--timeout",
-            "180000",
-        ])
-    } else {
-        let mut cmd_args = vec!["run", "-p", "skill-test", "--release", "--"];
-        cmd_args.extend(args.iter().map(String::as_str));
-        cargo(&cmd_args)
-    }
 }
 
 fn cmd_integration_test() -> Result<()> {
     cargo(&[
         "test",
         "-p",
-        "skill-test",
+        "agent-tools",
         "--features",
         "integration-test",
         "--",
@@ -181,14 +192,7 @@ fn cmd_docker_test_build() -> Result<()> {
 }
 
 fn cmd_install() -> Result<()> {
-    cargo(&[
-        "build",
-        "--release",
-        "-p",
-        "agent-tools",
-        "-p",
-        "skill-test",
-    ])?;
+    cargo(&["build", "--release", "-p", "agent-tools"])?;
 
     let home = env::var_os("HOME").context("HOME environment variable not set")?;
     let bin_dir = PathBuf::from(home).join(".agent-tools/bin");
@@ -206,7 +210,6 @@ fn cmd_install() -> Result<()> {
     };
 
     copy_binary("agent-tools")?;
-    copy_binary("skill-test")?;
 
     println!();
     println!("Add to shell profile:");

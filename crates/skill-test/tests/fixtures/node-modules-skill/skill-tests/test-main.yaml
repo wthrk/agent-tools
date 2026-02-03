@@ -1,7 +1,0 @@
-- id: main-001
-  prompt: "Run /node-modules-skill"
-  assertions:
-    - id: has-output
-      type: contains
-      pattern: "Node"
-      expect: present

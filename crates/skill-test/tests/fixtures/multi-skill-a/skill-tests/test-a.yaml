@@ -1,7 +1,0 @@
-- id: multi-a-001
-  prompt: "Run /multi-skill-a"
-  assertions:
-    - id: has-output
-      type: contains
-      pattern: "Skill A"
-      expect: present

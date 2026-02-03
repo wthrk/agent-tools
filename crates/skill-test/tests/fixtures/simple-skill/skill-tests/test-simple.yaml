@@ -1,9 +1,0 @@
-scenarios:
-  simple-test:
-    desc: "Simple test"
-    prompt: "Hello"
-    assertions:
-      - type: contains
-        id: has-hello
-        text: "Hello"
-        expect: present
