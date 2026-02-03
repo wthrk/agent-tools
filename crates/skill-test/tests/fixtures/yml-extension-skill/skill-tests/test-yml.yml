@@ -1,7 +1,0 @@
-- id: yml-001
-  prompt: "Run /yml-extension-skill"
-  assertions:
-    - id: has-output
-      type: contains
-      pattern: "YML"
-      expect: present

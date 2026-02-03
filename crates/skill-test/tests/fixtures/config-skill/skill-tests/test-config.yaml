@@ -1,7 +1,0 @@
-- id: config-001
-  prompt: "Run /config-skill"
-  assertions:
-    - id: has-output
-      type: contains
-      pattern: "Config"
-      expect: present

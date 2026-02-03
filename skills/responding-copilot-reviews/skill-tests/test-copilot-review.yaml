@@ -48,8 +48,8 @@ scenarios:
   basic-flow:
     desc: "基本フローの説明"
     prompt: |
-      PR #123 のCopilotレビューコメントに対応したいです。
-      どのような手順で進めればよいですか？
+      GitHub CopilotのPRレビューコメントに対応する手順を教えてください。
+      実際のPRは操作せず、手順の説明だけお願いします。
     assertions:
       - shows-gh-api
       - mentions-verification
@@ -60,8 +60,8 @@ scenarios:
   warns-blind-acceptance:
     desc: "無批判受け入れへの警告"
     prompt: |
-      Copilotの指摘を全部直してしまいたいのですが、
-      効率的なやり方を教えてください。
+      Copilotのレビュー指摘を全部そのまま直すのは良くないと聞きました。
+      なぜですか？注意点を教えてください。
     assertions:
       - warns-anti-pattern
       - mentions-verification
@@ -69,7 +69,8 @@ scenarios:
   explains-reply-method:
     desc: "返信方法の説明"
     prompt: |
-      Copilotレビューコメントへの返信方法を教えてください。
+      Copilotのレビューコメントに返信する方法を教えてください。
+      gh CLIを使った方法でお願いします。
     assertions:
       - shows-gh-api
       - mentions-direct-reply

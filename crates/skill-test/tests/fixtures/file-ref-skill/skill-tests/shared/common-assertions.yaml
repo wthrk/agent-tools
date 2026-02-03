@@ -1,5 +1,0 @@
-# Shared assertions loaded via file: directive
-- id: shared-check
-  type: contains
-  pattern: "File reference"
-  expect: present

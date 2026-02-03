@@ -28,10 +28,9 @@ RUN git init && \
     git commit -m "Initial commit"
 
 # Build and install (simulates cargo make install)
-RUN cargo build --release -p agent-tools -p skill-test && \
+RUN cargo build --release -p agent-tools && \
     mkdir -p bin && \
-    cp target/release/agent-tools bin/ && \
-    cp target/release/skill-test bin/
+    cp target/release/agent-tools bin/
 
 # Create test project (simulates user's project)
 RUN mkdir -p /home/testuser/test-project/.git && \

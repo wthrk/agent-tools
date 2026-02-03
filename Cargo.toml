@@ -2,8 +2,6 @@
 resolver = "2"
 members = [
     "crates/agent-tools",
-    "crates/skill-test",
-    "crates/skill-test-core",
     "xtask",
 ]
 
@@ -26,6 +24,3 @@ panic = "deny"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
-
-[workspace.dependencies]
-skill-test-core = { path = "crates/skill-test-core", version = "0.1.0" }
