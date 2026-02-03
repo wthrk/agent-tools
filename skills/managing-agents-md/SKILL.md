@@ -190,5 +190,5 @@ Output validation report with score and recommendations.
   - Node.js: look for `scripts` in package.json
   - Rust: look for `[[bin]]` and `[workspace]` in Cargo.toml
   - Python: look for `[tool.pytest]` or `[tool.poetry]`
-- **Recovery from mistakes:** `jj undo` or `git checkout AGENTS.md`
+- **Recovery from mistakes:** `jj undo` or `git restore AGENTS.md`
 - **Monorepo support:** Create nested AGENTS.md in subdirectories for package-specific instructions

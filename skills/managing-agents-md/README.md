@@ -133,5 +133,5 @@ AGENTS.mdが存在すれば内容を表示、存在しなければ作成を提�
 
 ## エラーリカバリ
 
-- 誤上書き: `jj undo` または `git checkout AGENTS.md`
+- 誤上書き: `jj undo` または `git restore AGENTS.md`
 - 作成失敗: `jj op restore <id>` または `git restore AGENTS.md`
