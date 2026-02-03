@@ -41,85 +41,56 @@ assertions:
   has-node-mention:
     desc: "Node言及"
     type: regex
-    pattern: "Node|npm|pnpm|yarn"
+    pattern: "Node|npm|pnpm|yarn|TypeScript"
+    expect: present
+
+  has-boundaries:
+    desc: "Boundariesセクションの存在"
+    type: regex
+    pattern: "## Boundaries"
     expect: present
 
 scenarios:
   generate-rust-agents:
     desc: "Rustプロジェクト用AGENTS.md生成"
     prompt: |
-      ファイルは作成せず、以下の情報に基づいてAGENTS.mdの内容をテキストで出力してください。
+      managing-agents-mdスキルのテンプレートに従って、以下のRustプロジェクト用のAGENTS.md内容を生成してください。
+      ファイルは作成せず、テキストとして出力してください。
 
       プロジェクト情報:
       - 言語: Rust 1.85
       - ビルド: cargo build --release
       - テスト: cargo test
-
-      以下の形式で出力:
-
-      # Agent Instructions
-
-      ## Project Overview
-      [説明]
-
-      ## Technology Stack
-      - Language: Rust 1.85
-      - Package Manager: Cargo
-
-      ## Development Commands
-      ```bash
-      cargo build --release
-      cargo test
-      ```
-
-      ## Boundaries
-      ### Never Do
-      - [禁止事項]
+      - プロジェクト名: my-rust-app
+      - 説明: CLIツール
     assertions:
       - has-project-overview
       - has-technology-stack
       - has-commands
       - has-code-block
       - has-rust-mention
+      - has-boundaries
 
   generate-node-agents:
     desc: "Node.jsプロジェクト用AGENTS.md生成"
     prompt: |
-      ファイルは作成せず、以下の情報に基づいてAGENTS.mdの内容をテキストで出力してください。
+      managing-agents-mdスキルのテンプレートに従って、以下のNode.jsプロジェクト用のAGENTS.md内容を生成してください。
+      ファイルは作成せず、テキストとして出力してください。
 
       プロジェクト情報:
       - 言語: TypeScript
       - パッケージマネージャー: npm
       - テスト: npm test
       - ビルド: npm run build
-
-      以下の形式で出力:
-
-      # Agent Instructions
-
-      ## Project Overview
-      [説明]
-
-      ## Technology Stack
-      - Language: TypeScript
-      - Package Manager: npm
-
-      ## Development Commands
-      ```bash
-      npm install
-      npm test
-      npm run build
-      ```
-
-      ## Boundaries
-      ### Never Do
-      - [禁止事項]
+      - プロジェクト名: my-node-app
+      - 説明: Webアプリケーション
     assertions:
       - has-project-overview
       - has-technology-stack
       - has-commands
       - has-code-block
       - has-node-mention
+      - has-boundaries
 
   check-boundaries-content:
     desc: "Boundariesセクションの内容確認"
