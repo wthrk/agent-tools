@@ -16,7 +16,6 @@ allow = [
     "CDLA-Permissive-2.0",
     "ISC",
     "MPL-2.0",
-    "OpenSSL",
     "Unicode-3.0",
     "Unlicense",
     "Zlib",
@@ -28,8 +27,9 @@ multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
 skip = [
-    # Transitive dependency conflicts from jsonschema -> reqwest -> rustls-platform-verifier -> jni
-    { crate = "core-foundation" },
+    # Transitive dependency conflicts from various crates
+    # getrandom: wasm-bindgen-test -> wasm-bindgen-test-macro -> getrandom
+    { crate = "getrandom" },
     { crate = "thiserror" },
     { crate = "thiserror-impl" },
     { crate = "windows-sys" },
@@ -37,6 +37,7 @@ skip = [
     { crate = "windows_aarch64_gnullvm" },
     { crate = "windows_aarch64_msvc" },
     { crate = "windows_i686_gnu" },
+    { crate = "windows_i686_gnullvm" },
     { crate = "windows_i686_msvc" },
     { crate = "windows_x86_64_gnu" },
     { crate = "windows_x86_64_gnullvm" },

@@ -188,6 +188,36 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
         dry_run,
     )?;
 
+    // Manage CLAUDE.md
+    println!();
+    println!("{}", "CLAUDE.md:".bold());
+    sync_claude_md(
+        &agent_tools_home,
+        &claude_home,
+        config.manage_claude_md,
+        dry_run,
+    )?;
+
+    // Manage hooks/
+    println!();
+    println!("{}", "Hooks:".bold());
+    sync_hooks(
+        &agent_tools_home,
+        &claude_home,
+        config.manage_hooks,
+        dry_run,
+    )?;
+
+    // Warn about settings/hooks dependency
+    if config.manage_settings && !config.manage_hooks {
+        println!();
+        println!(
+            "{} settings.json references ~/.claude/hooks/ but manage_hooks is false",
+            "Warning:".yellow().bold()
+        );
+        println!("  Consider setting manage_hooks: true or hooks may not be found");
+    }
+
     // Summary
     println!();
     if dry_run {
@@ -232,42 +262,50 @@ fn sync_settings(
         return Ok(());
     }
 
-    if target.exists() || target.is_symlink() {
-        if target.is_symlink() {
-            if let Ok(link_target) = fs::read_link(&target) {
-                if link_target == source {
-                    println!("  {} Already linked", "✓".green());
-                    return Ok(());
+    if target.is_symlink() {
+        if let Ok(link_target) = fs::read_link(&target) {
+            if link_target == source {
+                println!("  {} Already linked", "✓".green());
+                return Ok(());
+            }
+            // Broken symlink - repair it
+            if !target.exists() {
+                if dry_run {
+                    println!(
+                        "  {} Would repair broken symlink → {}",
+                        "→".blue(),
+                        source.display()
+                    );
+                } else {
+                    fs::remove_file(&target)?;
+                    symlink(&source, &target)?;
+                    println!(
+                        "  {} Repaired broken symlink → {}",
+                        "✓".green(),
+                        source.display()
+                    );
                 }
+                return Ok(());
             }
-        }
-
-        // Different link or not a link
-        if dry_run {
+            // Different link target - warn but don't change
             println!(
-                "  {} Would replace with link to {}",
-                "→".blue(),
-                source.display()
+                "  {} Exists but points to different target: {}",
+                "!".yellow(),
+                link_target.display()
             );
-        } else {
-            // Backup existing settings
-            if !target.is_symlink() {
-                let backup_dir = paths::backups_dir()?;
-                fs::create_dir_all(&backup_dir)?;
-                let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-                let backup_path = backup_dir.join(format!("settings.json_{timestamp}"));
-                fs::copy(&target, &backup_path)?;
-                println!(
-                    "  {} Backed up existing settings to {}",
-                    "!".yellow(),
-                    backup_path.display()
-                );
-            }
-            fs::remove_file(&target)?;
-            symlink(&source, &target)?;
-            println!("  {} Linked to {}", "✓".green(), source.display());
+            return Ok(());
         }
-    } else if dry_run {
+    } else if target.exists() {
+        // File exists but is not a symlink - warn but don't change
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    // Target doesn't exist - create link
+    if dry_run {
         println!("  {} Would link to {}", "→".blue(), source.display());
     } else {
         symlink(&source, &target)?;
@@ -303,36 +341,189 @@ fn sync_plugins(
                     println!("  {} Already linked", "✓".green());
                     return Ok(());
                 }
-            }
-        }
-
-        // Different link or not a link
-        if dry_run {
-            println!(
-                "  {} Would replace with link to {}",
-                "→".blue(),
-                source.display()
-            );
-        } else {
-            // Backup existing plugins
-            if !target.is_symlink() && target.is_dir() {
-                let backup_dir = paths::backups_dir()?;
-                fs::create_dir_all(&backup_dir)?;
-                let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-                let backup_path = backup_dir.join(format!("plugins_{timestamp}"));
-                fs::rename(&target, &backup_path)?;
+                // Check if the symlink is broken (target doesn't exist)
+                if !target.exists() {
+                    // Broken symlink - update it
+                    if dry_run {
+                        println!(
+                            "  {} Would update broken link to {}",
+                            "→".blue(),
+                            source.display()
+                        );
+                    } else {
+                        fs::remove_file(&target)?;
+                        symlink(&source, &target)?;
+                        println!(
+                            "  {} Updated broken link to {}",
+                            "✓".green(),
+                            source.display()
+                        );
+                    }
+                    return Ok(());
+                }
+                // Different link target but target exists - warn but don't change
                 println!(
-                    "  {} Backed up existing plugins to {}",
+                    "  {} Exists but points to different target: {}",
                     "!".yellow(),
-                    backup_path.display()
+                    link_target.display()
                 );
-            } else {
-                fs::remove_file(&target).or_else(|_| fs::remove_dir_all(&target))?;
+                return Ok(());
             }
-            symlink(&source, &target)?;
-            println!("  {} Linked to {}", "✓".green(), source.display());
         }
-    } else if dry_run {
+        // Directory exists but is not a symlink - warn but don't change
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    // Target doesn't exist - create link
+    if dry_run {
+        println!("  {} Would link to {}", "→".blue(), source.display());
+    } else {
+        symlink(&source, &target)?;
+        println!("  {} Linked to {}", "✓".green(), source.display());
+    }
+
+    Ok(())
+}
+
+fn sync_claude_md(
+    agent_tools_home: &Path,
+    claude_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    let source = agent_tools_home.join("global/CLAUDE.md");
+    let target = claude_home.join("CLAUDE.md");
+
+    if !manage {
+        println!("  {} Not managed (manage_claude_md: false)", "·".dimmed());
+        return Ok(());
+    }
+
+    if !source.exists() {
+        println!("  {} Source not found: {}", "!".yellow(), source.display());
+        return Ok(());
+    }
+
+    if target.is_symlink() {
+        if let Ok(link_target) = fs::read_link(&target) {
+            if link_target == source {
+                println!("  {} Already linked", "✓".green());
+                return Ok(());
+            }
+            // Broken symlink - repair it
+            if !target.exists() {
+                if dry_run {
+                    println!(
+                        "  {} Would repair broken symlink → {}",
+                        "→".blue(),
+                        source.display()
+                    );
+                } else {
+                    fs::remove_file(&target)?;
+                    symlink(&source, &target)?;
+                    println!(
+                        "  {} Repaired broken symlink → {}",
+                        "✓".green(),
+                        source.display()
+                    );
+                }
+                return Ok(());
+            }
+            // Different link target - warn but don't change
+            println!(
+                "  {} Exists but points to different target: {}",
+                "!".yellow(),
+                link_target.display()
+            );
+            return Ok(());
+        }
+    } else if target.exists() {
+        // File exists but is not a symlink - warn but don't change
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    // Target doesn't exist - create link
+    if dry_run {
+        println!("  {} Would link to {}", "→".blue(), source.display());
+    } else {
+        symlink(&source, &target)?;
+        println!("  {} Linked to {}", "✓".green(), source.display());
+    }
+
+    Ok(())
+}
+
+fn sync_hooks(
+    agent_tools_home: &Path,
+    claude_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    let source = agent_tools_home.join("global/hooks");
+    let target = claude_home.join("hooks");
+
+    if !manage {
+        println!("  {} Not managed (manage_hooks: false)", "·".dimmed());
+        return Ok(());
+    }
+
+    if !source.exists() {
+        println!("  {} Source not found: {}", "!".yellow(), source.display());
+        return Ok(());
+    }
+
+    if target.is_symlink() {
+        if let Ok(link_target) = fs::read_link(&target) {
+            if link_target == source {
+                println!("  {} Already linked", "✓".green());
+                return Ok(());
+            }
+            // Broken symlink - repair it
+            if !target.exists() {
+                if dry_run {
+                    println!(
+                        "  {} Would repair broken symlink → {}",
+                        "→".blue(),
+                        source.display()
+                    );
+                } else {
+                    fs::remove_file(&target)?;
+                    symlink(&source, &target)?;
+                    println!(
+                        "  {} Repaired broken symlink → {}",
+                        "✓".green(),
+                        source.display()
+                    );
+                }
+                return Ok(());
+            }
+            // Different link target - warn but don't change
+            println!(
+                "  {} Exists but points to different target: {}",
+                "!".yellow(),
+                link_target.display()
+            );
+            return Ok(());
+        }
+    } else if target.exists() {
+        // Directory exists but is not a symlink - warn but don't change
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    // Target doesn't exist - create link
+    if dry_run {
         println!("  {} Would link to {}", "→".blue(), source.display());
     } else {
         symlink(&source, &target)?;

@@ -5,27 +5,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.skill-tools/hooks/load-claude-md.rs --debug --hook-event UserPromptSubmit"
+            "command": "$HOME/.claude/hooks/detect-jj.sh"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.skill-tools/hooks/load-claude-md.rs --debug --hook-event PreToolUse"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
+            "command": "$HOME/.claude/hooks/block-git.sh"
+          },
           {
             "type": "command",
-            "command": "$HOME/.skill-tools/hooks/load-claude-md.rs --debug --hook-event PostToolUse"
+            "command": "$HOME/.claude/hooks/block-tail-head.sh"
           }
         ]
       }
