@@ -7,8 +7,8 @@ AGENTS.mdファイルを作成・管理するスキル。AIコーディングエ
 **主な特徴:**
 - 標準Markdown、必須フィールドなし
 - モノレポではネストしたAGENTS.mdをサポート（最も近いファイルが優先）
-- 32KiBのサイズ制限（Codexデフォルト）
-- Codex、Cursor、Copilot等の複数エージェントが同じファイルを参照
+- 32KiBのサイズ制限（AIエージェントの一般的なデフォルト）
+- Cursor、GitHub Copilot、Claude Code等の複数エージェントが同じファイルを参照
 
 ## 使用場面
 

@@ -34,8 +34,8 @@ Manages AGENTS.md files, the standard documentation format for AI coding agents.
 **Key facts:**
 - Standard Markdown, no required fields
 - Monorepos support nested AGENTS.md (closest file takes precedence)
-- 32KiB size limit (Codex default)
-- Used by Codex, Cursor, Copilot, and other AI agents
+- 32KiB size limit (common default for AI agents)
+- Used by Cursor, GitHub Copilot, Claude Code, and other AI agents
 
 ## When to Use
 
@@ -160,7 +160,7 @@ Output validation report with score and recommendations.
 - AGENTS.md is placed at project root
 - Can be nested in subdirectories (closest file takes precedence)
 - Standard Markdown, no required fields
-- Multiple agents (Codex, Cursor, Copilot, etc.) reference the same file
+- Multiple AI agents (Cursor, GitHub Copilot, Claude Code, etc.) reference the same file
 
 **RULES:**
 - Always confirm before overwriting existing file
