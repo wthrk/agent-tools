@@ -6,6 +6,8 @@ auto_deploy_skills:
   - searching-skills
   - creating-skills
   - jj
+  - managing-agents-md
+  - responding-copilot-reviews
 
 # Manage ~/.claude/settings.json (link to ~/.skill-tools/settings.json)
 manage_settings: true
