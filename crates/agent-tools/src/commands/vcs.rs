@@ -23,17 +23,17 @@ pub fn detect_vcs(path: &Path) -> Option<Vcs> {
     None
 }
 
-/// Check for uncommitted changes using jj diff --stat (machine-parseable, locale-independent)
+/// Check for uncommitted changes using jj diff (empty output means clean)
 pub fn check_jj_clean(path: &Path) -> Result<()> {
     let diff = Command::new("jj")
-        .args(["diff", "--stat"])
+        .args(["diff"])
         .current_dir(path)
         .output()
-        .context("Failed to run jj diff --stat")?;
+        .context("Failed to run jj diff")?;
 
     if !diff.status.success() {
         let stderr = String::from_utf8_lossy(&diff.stderr);
-        bail!("jj diff --stat failed:\n{}", stderr);
+        bail!("jj diff failed:\n{}", stderr);
     }
 
     let diff_output = String::from_utf8_lossy(&diff.stdout);
