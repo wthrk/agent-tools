@@ -3,6 +3,7 @@ use colored::Colorize;
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::Path;
+use std::process::Command;
 
 use crate::config::Config;
 use crate::paths;
@@ -207,6 +208,24 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
         config.manage_hooks,
         dry_run,
     )?;
+
+    // Manage codex config
+    let codex_home = paths::codex_home()?;
+    println!();
+    println!("{}", "Codex config:".bold());
+    sync_codex_config(
+        &agent_tools_home,
+        &codex_home,
+        config.manage_codex_config,
+        dry_run,
+    )?;
+
+    // Manage Claude MCP servers
+    if !config.claude_mcp_servers.is_empty() {
+        println!();
+        println!("{}", "Claude MCP servers:".bold());
+        sync_claude_mcp_servers(&config, dry_run)?;
+    }
 
     // Warn about settings/hooks dependency
     if config.manage_settings && !config.manage_hooks {
@@ -528,6 +547,156 @@ fn sync_hooks(
     } else {
         symlink(&source, &target)?;
         println!("  {} Linked to {}", "✓".green(), source.display());
+    }
+
+    Ok(())
+}
+
+fn sync_file_link(
+    source: &Path,
+    target: &Path,
+    manage: bool,
+    manage_key: &str,
+    dry_run: bool,
+) -> Result<()> {
+    if !manage {
+        println!("  {} Not managed ({manage_key}: false)", "·".dimmed());
+        return Ok(());
+    }
+
+    if !source.exists() {
+        println!("  {} Source not found: {}", "!".yellow(), source.display());
+        return Ok(());
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = target.parent() {
+        if !parent.exists() {
+            if dry_run {
+                println!("  {} Would create {}", "→".blue(), parent.display());
+            } else {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("Failed to create {}", parent.display()))?;
+                println!("  {} Created {}", "✓".green(), parent.display());
+            }
+        }
+    }
+
+    if target.is_symlink() {
+        if let Ok(link_target) = fs::read_link(target) {
+            if link_target == source {
+                println!("  {} Already linked", "✓".green());
+                return Ok(());
+            }
+            if !target.exists() {
+                if dry_run {
+                    println!(
+                        "  {} Would repair broken symlink → {}",
+                        "→".blue(),
+                        source.display()
+                    );
+                } else {
+                    fs::remove_file(target)?;
+                    symlink(source, target)?;
+                    println!(
+                        "  {} Repaired broken symlink → {}",
+                        "✓".green(),
+                        source.display()
+                    );
+                }
+                return Ok(());
+            }
+            println!(
+                "  {} Exists but points to different target: {}",
+                "!".yellow(),
+                link_target.display()
+            );
+            return Ok(());
+        }
+    } else if target.exists() {
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    if dry_run {
+        println!("  {} Would link to {}", "→".blue(), source.display());
+    } else {
+        symlink(source, target)?;
+        println!("  {} Linked to {}", "✓".green(), source.display());
+    }
+
+    Ok(())
+}
+
+fn sync_codex_config(
+    agent_tools_home: &Path,
+    codex_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    sync_file_link(
+        &agent_tools_home.join("codex/config.toml"),
+        &codex_home.join("config.toml"),
+        manage,
+        "manage_codex_config",
+        dry_run,
+    )
+}
+
+fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
+    for (name, server) in &config.claude_mcp_servers {
+        let json = serde_json::json!({
+            "type": server.transport_type,
+            "command": server.command,
+            "args": server.args,
+            "env": server.env,
+        });
+        let json_str = serde_json::to_string(&json)
+            .with_context(|| format!("Failed to serialize MCP server config for '{name}'"))?;
+
+        if dry_run {
+            println!(
+                "  {} Would register '{}': {} {}",
+                "→".blue(),
+                name.cyan(),
+                server.command,
+                server.args.join(" ")
+            );
+            continue;
+        }
+
+        // Remove existing server first (ignore errors if not found)
+        let _ = Command::new("claude")
+            .args(["mcp", "remove", "-s", "user", name])
+            .output();
+
+        let output = Command::new("claude")
+            .args(["mcp", "add-json", "-s", "user", name, &json_str])
+            .output()
+            .with_context(|| {
+                format!("Failed to run 'claude mcp add-json' for '{name}'")
+            })?;
+
+        if output.status.success() {
+            println!(
+                "  {} Registered '{}': {} {}",
+                "✓".green(),
+                name.cyan(),
+                server.command,
+                server.args.join(" ")
+            );
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!(
+                "  {} Failed to register '{}': {}",
+                "!".yellow(),
+                name.cyan(),
+                stderr.trim()
+            );
+        }
     }
 
     Ok(())

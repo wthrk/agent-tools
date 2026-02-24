@@ -1,0 +1,55 @@
+model_reasoning_effort = "medium"
+personality = "pragmatic"
+model = "gpt-5.3-codex"
+[projects."/Users/abe/works/liveview-server-rust"]
+trust_level = "trusted"
+
+[projects."/Users/abe/works/liveview-client-flutter"]
+trust_level = "trusted"
+
+[projects."/Users/abe/hoge"]
+trust_level = "trusted"
+
+[projects."/Users/abe"]
+trust_level = "untrusted"
+
+[projects."/Users/abe/works/agentrev"]
+trust_level = "trusted"
+
+[mcp_servers.serena]
+command = "uvx"
+args = ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--enable-web-dashboard=false"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+
+[notice]
+hide_gpt5_1_migration_prompt = true
+"hide_gpt-5.1-codex-max_migration_prompt" = true
+
+[notice.model_migrations]
+"gpt-5.1-codex-max" = "gpt-5.2-codex"
+"gpt-5.2-codex" = "gpt-5.3-codex"
+
+[features]
+multi_agent = true
+prevent_idle_sleep = true
+
+[agents]
+max_threads = 12                          # 同時に動かせるエージェントの最大数
+
+# --- explorer: コードを読むだけの調査エージェント ---
+[agents.explorer]
+description = "Codebase research agent. Use for all code investigation, no edits."
+config_file = "/Users/abe/.codex/agents/explorer.toml"
+
+# --- worker: コードを編集できる修正エージェント ---
+[agents.worker]
+description = "Coding and bug fix agent. Use for implementation, refactoring, and running tests."
+config_file = "/Users/abe/.codex/agents/worker.toml"
+
+# --- fast_worker: 軽量タスク向けの高速エージェント（オプション） ---
+[agents.fast_worker]
+description = "Fast scoped implementation agent."
+config_file = "/Users/abe/.codex/agents/fast_worker.toml"

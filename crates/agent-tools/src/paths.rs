@@ -50,3 +50,18 @@ pub fn claude_home() -> Result<PathBuf> {
 pub fn claude_skills_dir() -> Result<PathBuf> {
     Ok(claude_home()?.join("skills"))
 }
+
+/// Get the Codex directory (~/.codex)
+/// Can be overridden with CODEX_HOME environment variable
+pub fn codex_home() -> Result<PathBuf> {
+    if let Ok(path) = std::env::var("CODEX_HOME") {
+        return Ok(PathBuf::from(path));
+    }
+
+    let home = directories::BaseDirs::new()
+        .context("Failed to get home directory")?
+        .home_dir()
+        .to_path_buf();
+
+    Ok(home.join(".codex"))
+}
