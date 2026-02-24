@@ -79,6 +79,82 @@ pub fn check_git_clean(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Fetch from remote without modifying working tree
+pub fn fetch_remote(path: &Path, vcs: Vcs) -> Result<()> {
+    match vcs {
+        Vcs::Jj => {
+            let output = Command::new("jj")
+                .args(["git", "fetch"])
+                .current_dir(path)
+                .output()
+                .context("Failed to run jj git fetch")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("jj git fetch failed:\n{}", stderr);
+            }
+        }
+        Vcs::Git => {
+            let output = Command::new("git")
+                .args(["fetch", "origin"])
+                .current_dir(path)
+                .output()
+                .context("Failed to run git fetch origin")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("git fetch origin failed:\n{}", stderr);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Check if remote has new commits (call after fetch_remote)
+pub fn has_remote_updates(path: &Path, vcs: Vcs) -> Result<bool> {
+    match vcs {
+        Vcs::Jj => {
+            let local = Command::new("jj")
+                .args(["log", "-r", "main", "--no-graph", "-T", "commit_id"])
+                .current_dir(path)
+                .output()
+                .context("Failed to get local main commit")?;
+            let remote = Command::new("jj")
+                .args([
+                    "log",
+                    "-r",
+                    "main@origin",
+                    "--no-graph",
+                    "-T",
+                    "commit_id",
+                ])
+                .current_dir(path)
+                .output()
+                .context("Failed to get remote main commit")?;
+
+            let local_id = String::from_utf8_lossy(&local.stdout).trim().to_string();
+            let remote_id = String::from_utf8_lossy(&remote.stdout).trim().to_string();
+
+            Ok(!local_id.is_empty() && !remote_id.is_empty() && local_id != remote_id)
+        }
+        Vcs::Git => {
+            let local = Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(path)
+                .output()
+                .context("Failed to get local HEAD")?;
+            let remote = Command::new("git")
+                .args(["rev-parse", "origin/main"])
+                .current_dir(path)
+                .output()
+                .context("Failed to get origin/main")?;
+
+            let local_id = String::from_utf8_lossy(&local.stdout).trim().to_string();
+            let remote_id = String::from_utf8_lossy(&remote.stdout).trim().to_string();
+
+            Ok(!local_id.is_empty() && !remote_id.is_empty() && local_id != remote_id)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -66,6 +66,9 @@ enum Commands {
         command: SkillCommands,
     },
 
+    /// Run startup checks (auto-update + sync) for SessionStart hooks
+    Startup,
+
     /// Clean up old backups
     Cleanup,
 }
@@ -212,6 +215,7 @@ fn main() -> anyhow::Result<()> {
                 std::process::exit(exit_code);
             }
         },
+        Commands::Startup => commands::startup::run(),
         Commands::Cleanup => commands::cleanup::run(),
     }
 }
