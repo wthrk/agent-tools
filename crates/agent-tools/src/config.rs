@@ -27,6 +27,14 @@ pub struct Config {
     /// Manage ~/.claude/hooks/ (link to ~/.agent-tools/global/hooks/)
     #[serde(default)]
     pub manage_hooks: bool,
+
+    /// Manage ~/.claude/.mcp.json (link to ~/.agent-tools/global/.mcp.json)
+    #[serde(default)]
+    pub manage_mcp_json: bool,
+
+    /// Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
+    #[serde(default)]
+    pub manage_codex_config: bool,
 }
 
 fn default_config_version() -> u32 {
@@ -42,6 +50,8 @@ impl Default for Config {
             manage_plugins: false,
             manage_claude_md: false,
             manage_hooks: false,
+            manage_mcp_json: false,
+            manage_codex_config: false,
         }
     }
 }

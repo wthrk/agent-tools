@@ -208,6 +208,27 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
         dry_run,
     )?;
 
+    // Manage .mcp.json
+    println!();
+    println!("{}", "MCP servers (.mcp.json):".bold());
+    sync_mcp_json(
+        &agent_tools_home,
+        &claude_home,
+        config.manage_mcp_json,
+        dry_run,
+    )?;
+
+    // Manage codex config
+    let codex_home = paths::codex_home()?;
+    println!();
+    println!("{}", "Codex config:".bold());
+    sync_codex_config(
+        &agent_tools_home,
+        &codex_home,
+        config.manage_codex_config,
+        dry_run,
+    )?;
+
     // Warn about settings/hooks dependency
     if config.manage_settings && !config.manage_hooks {
         println!();
@@ -531,4 +552,113 @@ fn sync_hooks(
     }
 
     Ok(())
+}
+
+fn sync_file_link(
+    source: &Path,
+    target: &Path,
+    manage: bool,
+    manage_key: &str,
+    dry_run: bool,
+) -> Result<()> {
+    if !manage {
+        println!("  {} Not managed ({manage_key}: false)", "·".dimmed());
+        return Ok(());
+    }
+
+    if !source.exists() {
+        println!("  {} Source not found: {}", "!".yellow(), source.display());
+        return Ok(());
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = target.parent() {
+        if !parent.exists() {
+            if dry_run {
+                println!("  {} Would create {}", "→".blue(), parent.display());
+            } else {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("Failed to create {}", parent.display()))?;
+                println!("  {} Created {}", "✓".green(), parent.display());
+            }
+        }
+    }
+
+    if target.is_symlink() {
+        if let Ok(link_target) = fs::read_link(target) {
+            if link_target == source {
+                println!("  {} Already linked", "✓".green());
+                return Ok(());
+            }
+            if !target.exists() {
+                if dry_run {
+                    println!(
+                        "  {} Would repair broken symlink → {}",
+                        "→".blue(),
+                        source.display()
+                    );
+                } else {
+                    fs::remove_file(target)?;
+                    symlink(source, target)?;
+                    println!(
+                        "  {} Repaired broken symlink → {}",
+                        "✓".green(),
+                        source.display()
+                    );
+                }
+                return Ok(());
+            }
+            println!(
+                "  {} Exists but points to different target: {}",
+                "!".yellow(),
+                link_target.display()
+            );
+            return Ok(());
+        }
+    } else if target.exists() {
+        println!(
+            "  {} Exists but is not a symlink (not managed)",
+            "!".yellow()
+        );
+        return Ok(());
+    }
+
+    if dry_run {
+        println!("  {} Would link to {}", "→".blue(), source.display());
+    } else {
+        symlink(source, target)?;
+        println!("  {} Linked to {}", "✓".green(), source.display());
+    }
+
+    Ok(())
+}
+
+fn sync_mcp_json(
+    agent_tools_home: &Path,
+    claude_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    sync_file_link(
+        &agent_tools_home.join("global/.mcp.json"),
+        &claude_home.join(".mcp.json"),
+        manage,
+        "manage_mcp_json",
+        dry_run,
+    )
+}
+
+fn sync_codex_config(
+    agent_tools_home: &Path,
+    codex_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    sync_file_link(
+        &agent_tools_home.join("codex/config.toml"),
+        &codex_home.join("config.toml"),
+        manage,
+        "manage_codex_config",
+        dry_run,
+    )
 }

@@ -21,3 +21,9 @@ manage_claude_md: true
 
 # Manage ~/.claude/hooks/ (link to ~/.agent-tools/global/hooks/)
 manage_hooks: true
+
+# Manage ~/.claude/.mcp.json (link to ~/.agent-tools/global/.mcp.json)
+manage_mcp_json: true
+
+# Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
+manage_codex_config: true

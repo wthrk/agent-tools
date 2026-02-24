@@ -199,6 +199,87 @@ pub fn run() -> Result<()> {
         }
     );
 
+    // MCP servers (.mcp.json) status
+    println!();
+    println!("{}", "MCP servers (.mcp.json):".bold());
+    let agent_tools_mcp_json = agent_tools_home.join("global/.mcp.json");
+    let claude_mcp_json = claude_home.join(".mcp.json");
+    println!(
+        "  Source:  {}",
+        if agent_tools_mcp_json.exists() {
+            agent_tools_mcp_json.display().to_string().green()
+        } else {
+            format!("{} (not found)", agent_tools_mcp_json.display()).dimmed()
+        }
+    );
+    print!("  Target:  ");
+    if claude_mcp_json.is_symlink() {
+        if claude_mcp_json.exists() {
+            if let Ok(target) = fs::read_link(&claude_mcp_json) {
+                if target == agent_tools_mcp_json {
+                    println!("{}", "linked".green());
+                } else {
+                    println!("{} → {}", "symlink".yellow(), target.display());
+                }
+            }
+        } else {
+            println!("{}", "(broken symlink)".red());
+        }
+    } else if claude_mcp_json.exists() {
+        println!("{}", "(file exists, not managed)".yellow());
+    } else {
+        println!("{}", "(not found)".dimmed());
+    }
+    println!(
+        "  Managed: {}",
+        if config.manage_mcp_json {
+            "yes".green()
+        } else {
+            "no".dimmed()
+        }
+    );
+
+    // Codex config status
+    println!();
+    println!("{}", "Codex config:".bold());
+    let codex_home = paths::codex_home()?;
+    let agent_tools_codex_config = agent_tools_home.join("codex/config.toml");
+    let codex_config = codex_home.join("config.toml");
+    println!(
+        "  Source:  {}",
+        if agent_tools_codex_config.exists() {
+            agent_tools_codex_config.display().to_string().green()
+        } else {
+            format!("{} (not found)", agent_tools_codex_config.display()).dimmed()
+        }
+    );
+    print!("  Target:  ");
+    if codex_config.is_symlink() {
+        if codex_config.exists() {
+            if let Ok(target) = fs::read_link(&codex_config) {
+                if target == agent_tools_codex_config {
+                    println!("{}", "linked".green());
+                } else {
+                    println!("{} → {}", "symlink".yellow(), target.display());
+                }
+            }
+        } else {
+            println!("{}", "(broken symlink)".red());
+        }
+    } else if codex_config.exists() {
+        println!("{}", "(file exists, not managed)".yellow());
+    } else {
+        println!("{}", "(not found)".dimmed());
+    }
+    println!(
+        "  Managed: {}",
+        if config.manage_codex_config {
+            "yes".green()
+        } else {
+            "no".dimmed()
+        }
+    );
+
     // List hooks if source exists
     if agent_tools_hooks.exists() {
         if let Ok(entries) = fs::read_dir(&agent_tools_hooks) {
