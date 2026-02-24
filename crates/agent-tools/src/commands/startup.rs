@@ -1,5 +1,7 @@
+use anyhow::Context;
 use std::fs;
 use std::process::Command;
+use std::time::SystemTime;
 
 use crate::commands::sync;
 use crate::commands::vcs::{self, Vcs};
@@ -12,8 +14,8 @@ pub fn run() -> anyhow::Result<()> {
     let config = match Config::load(&config_path) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("startup: failed to load config: {e}");
-            return Ok(());
+            eprintln!("startup: failed to load config: {e}, using defaults");
+            Config::default()
         }
     };
 
@@ -47,29 +49,80 @@ fn check_and_update(agent_tools_home: &std::path::Path) -> anyhow::Result<()> {
     }
 
     // Check if tree is clean
-    let clean = match vcs {
-        Vcs::Jj => vcs::check_jj_clean(agent_tools_home).is_ok(),
-        Vcs::Git => vcs::check_git_clean(agent_tools_home).is_ok(),
-    };
+    match vcs {
+        Vcs::Jj => {
+            if let Err(e) = vcs::check_jj_clean(agent_tools_home) {
+                eprintln!("startup: {e}, skipping auto-update");
+                return Ok(());
+            }
+        }
+        Vcs::Git => {
+            if let Err(e) = vcs::check_git_clean(agent_tools_home) {
+                eprintln!("startup: {e}, skipping auto-update");
+                return Ok(());
+            }
+        }
+    }
 
-    if !clean {
-        eprintln!("startup: updates available but working tree is dirty, skipping auto-update");
-        return Ok(());
+    // Acquire lock to prevent concurrent background updates
+    let lock_path = agent_tools_home.join("logs").join("startup-update.lock");
+    if let Some(parent) = lock_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    // Remove stale lock (older than 10 minutes)
+    if lock_path.exists() {
+        if let Ok(metadata) = fs::metadata(&lock_path) {
+            if let Ok(modified) = metadata.modified() {
+                if SystemTime::now()
+                    .duration_since(modified)
+                    .unwrap_or_default()
+                    .as_secs()
+                    > 600
+                {
+                    let _ = fs::remove_file(&lock_path);
+                }
+            }
+        }
+    }
+    match fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&lock_path)
+    {
+        Ok(_) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+            return Ok(());
+        }
+        Err(e) => {
+            return Err(e.into());
+        }
     }
 
     // Launch background update
     let logs_dir = agent_tools_home.join("logs");
-    fs::create_dir_all(&logs_dir)?;
     let log_path = logs_dir.join("startup-update.log");
 
-    Command::new("nohup")
-        .args([
-            "agent-tools",
-            "update",
-        ])
-        .stdout(fs::File::create(&log_path)?)
-        .stderr(fs::File::create(logs_dir.join("startup-update-err.log"))?)
-        .spawn()?;
+    let exe = std::env::current_exe().context("Failed to get current executable path")?;
+    let spawn_result = Command::new(&exe)
+        .arg("update")
+        .stdout(
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path)?,
+        )
+        .stderr(
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(logs_dir.join("startup-update-err.log"))?,
+        )
+        .spawn();
+
+    if let Err(e) = spawn_result {
+        let _ = fs::remove_file(&lock_path);
+        return Err(e.into());
+    }
 
     Ok(())
 }

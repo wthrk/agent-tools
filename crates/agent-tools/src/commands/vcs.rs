@@ -108,49 +108,44 @@ pub fn fetch_remote(path: &Path, vcs: Vcs) -> Result<()> {
     Ok(())
 }
 
-/// Check if remote has new commits (call after fetch_remote)
+/// Check if remote has new commits not yet in local main (call after fetch_remote)
 pub fn has_remote_updates(path: &Path, vcs: Vcs) -> Result<bool> {
     match vcs {
         Vcs::Jj => {
-            let local = Command::new("jj")
-                .args(["log", "-r", "main", "--no-graph", "-T", "commit_id"])
-                .current_dir(path)
-                .output()
-                .context("Failed to get local main commit")?;
-            let remote = Command::new("jj")
+            let output = Command::new("jj")
                 .args([
                     "log",
                     "-r",
-                    "main@origin",
+                    "main..main@origin",
                     "--no-graph",
                     "-T",
                     "commit_id",
+                    "-n",
+                    "1",
                 ])
                 .current_dir(path)
                 .output()
-                .context("Failed to get remote main commit")?;
-
-            let local_id = String::from_utf8_lossy(&local.stdout).trim().to_string();
-            let remote_id = String::from_utf8_lossy(&remote.stdout).trim().to_string();
-
-            Ok(!local_id.is_empty() && !remote_id.is_empty() && local_id != remote_id)
+                .context("Failed to check for remote-only commits")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("jj log for main..main@origin failed:\n{}", stderr);
+            }
+            let remote_only = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(!remote_only.is_empty())
         }
         Vcs::Git => {
-            let local = Command::new("git")
-                .args(["rev-parse", "HEAD"])
+            let output = Command::new("git")
+                .args(["rev-list", "main..origin/main", "--count"])
                 .current_dir(path)
                 .output()
-                .context("Failed to get local HEAD")?;
-            let remote = Command::new("git")
-                .args(["rev-parse", "origin/main"])
-                .current_dir(path)
-                .output()
-                .context("Failed to get origin/main")?;
-
-            let local_id = String::from_utf8_lossy(&local.stdout).trim().to_string();
-            let remote_id = String::from_utf8_lossy(&remote.stdout).trim().to_string();
-
-            Ok(!local_id.is_empty() && !remote_id.is_empty() && local_id != remote_id)
+                .context("Failed to check for remote-only commits")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("git rev-list main..origin/main failed:\n{}", stderr);
+            }
+            let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let count: u32 = count_str.parse().unwrap_or(0);
+            Ok(count > 0)
         }
     }
 }
