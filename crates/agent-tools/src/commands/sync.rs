@@ -208,16 +208,6 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
         dry_run,
     )?;
 
-    // Manage .mcp.json
-    println!();
-    println!("{}", "MCP servers (.mcp.json):".bold());
-    sync_mcp_json(
-        &agent_tools_home,
-        &claude_home,
-        config.manage_mcp_json,
-        dry_run,
-    )?;
-
     // Manage codex config
     let codex_home = paths::codex_home()?;
     println!();
@@ -631,21 +621,6 @@ fn sync_file_link(
     }
 
     Ok(())
-}
-
-fn sync_mcp_json(
-    agent_tools_home: &Path,
-    claude_home: &Path,
-    manage: bool,
-    dry_run: bool,
-) -> Result<()> {
-    sync_file_link(
-        &agent_tools_home.join("global/.mcp.json"),
-        &claude_home.join(".mcp.json"),
-        manage,
-        "manage_mcp_json",
-        dry_run,
-    )
 }
 
 fn sync_codex_config(
