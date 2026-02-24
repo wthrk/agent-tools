@@ -3,6 +3,7 @@ use colored::Colorize;
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::Path;
+use std::process::Command;
 
 use crate::config::Config;
 use crate::paths;
@@ -218,6 +219,13 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
         config.manage_codex_config,
         dry_run,
     )?;
+
+    // Manage Claude MCP servers
+    if !config.claude_mcp_servers.is_empty() {
+        println!();
+        println!("{}", "Claude MCP servers:".bold());
+        sync_claude_mcp_servers(&config, dry_run)?;
+    }
 
     // Warn about settings/hooks dependency
     if config.manage_settings && !config.manage_hooks {
@@ -636,4 +644,60 @@ fn sync_codex_config(
         "manage_codex_config",
         dry_run,
     )
+}
+
+fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
+    for (name, server) in &config.claude_mcp_servers {
+        let json = serde_json::json!({
+            "type": server.transport_type,
+            "command": server.command,
+            "args": server.args,
+            "env": server.env,
+        });
+        let json_str = serde_json::to_string(&json)
+            .with_context(|| format!("Failed to serialize MCP server config for '{name}'"))?;
+
+        if dry_run {
+            println!(
+                "  {} Would register '{}': {} {}",
+                "→".blue(),
+                name.cyan(),
+                server.command,
+                server.args.join(" ")
+            );
+            continue;
+        }
+
+        // Remove existing server first (ignore errors if not found)
+        let _ = Command::new("claude")
+            .args(["mcp", "remove", "-s", "user", name])
+            .output();
+
+        let output = Command::new("claude")
+            .args(["mcp", "add-json", "-s", "user", name, &json_str])
+            .output()
+            .with_context(|| {
+                format!("Failed to run 'claude mcp add-json' for '{name}'")
+            })?;
+
+        if output.status.success() {
+            println!(
+                "  {} Registered '{}': {} {}",
+                "✓".green(),
+                name.cyan(),
+                server.command,
+                server.args.join(" ")
+            );
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!(
+                "  {} Failed to register '{}': {}",
+                "!".yellow(),
+                name.cyan(),
+                stderr.trim()
+            );
+        }
+    }
+
+    Ok(())
 }

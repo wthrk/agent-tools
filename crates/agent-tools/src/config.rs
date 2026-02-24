@@ -1,7 +1,24 @@
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+
+/// MCP server definition for `claude mcp add-json -s user`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpServerConfig {
+    #[serde(rename = "type", default = "default_mcp_type")]
+    pub transport_type: String,
+    pub command: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+    #[serde(default)]
+    pub env: HashMap<String, String>,
+}
+
+fn default_mcp_type() -> String {
+    "stdio".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -31,6 +48,10 @@ pub struct Config {
     /// Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
     #[serde(default)]
     pub manage_codex_config: bool,
+
+    /// Claude MCP servers to register via `claude mcp add-json -s user`
+    #[serde(default)]
+    pub claude_mcp_servers: HashMap<String, McpServerConfig>,
 }
 
 fn default_config_version() -> u32 {
@@ -47,6 +68,7 @@ impl Default for Config {
             manage_claude_md: false,
             manage_hooks: false,
             manage_codex_config: false,
+            claude_mcp_servers: HashMap::new(),
         }
     }
 }
