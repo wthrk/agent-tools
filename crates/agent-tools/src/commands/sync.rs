@@ -676,9 +676,7 @@ fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
         let output = Command::new("claude")
             .args(["mcp", "add-json", "-s", "user", name, &json_str])
             .output()
-            .with_context(|| {
-                format!("Failed to run 'claude mcp add-json' for '{name}'")
-            })?;
+            .with_context(|| format!("Failed to run 'claude mcp add-json' for '{name}'"))?;
 
         if output.status.success() {
             println!(
