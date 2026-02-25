@@ -52,10 +52,18 @@ pub struct Config {
     /// Claude MCP servers to register via `claude mcp add-json -s user`
     #[serde(default)]
     pub claude_mcp_servers: HashMap<String, McpServerConfig>,
+
+    /// Auto-update agent-tools on startup (fetch + rebuild if updates available)
+    #[serde(default = "default_true")]
+    pub auto_update_on_startup: bool,
 }
 
 fn default_config_version() -> u32 {
     1
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for Config {
@@ -69,6 +77,7 @@ impl Default for Config {
             manage_hooks: false,
             manage_codex_config: false,
             claude_mcp_servers: HashMap::new(),
+            auto_update_on_startup: true,
         }
     }
 }

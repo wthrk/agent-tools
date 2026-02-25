@@ -4,6 +4,7 @@ pub mod init;
 pub mod link;
 pub mod rebase;
 pub mod skill;
+pub mod startup;
 pub mod status;
 pub mod sync;
 pub mod unlink;

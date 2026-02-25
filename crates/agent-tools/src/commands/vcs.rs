@@ -79,6 +79,77 @@ pub fn check_git_clean(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Fetch from remote without modifying working tree
+pub fn fetch_remote(path: &Path, vcs: Vcs) -> Result<()> {
+    match vcs {
+        Vcs::Jj => {
+            let output = Command::new("jj")
+                .args(["git", "fetch"])
+                .current_dir(path)
+                .output()
+                .context("Failed to run jj git fetch")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("jj git fetch failed:\n{}", stderr);
+            }
+        }
+        Vcs::Git => {
+            let output = Command::new("git")
+                .args(["fetch", "origin"])
+                .current_dir(path)
+                .output()
+                .context("Failed to run git fetch origin")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("git fetch origin failed:\n{}", stderr);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Check if remote has new commits not yet in local main (call after fetch_remote)
+pub fn has_remote_updates(path: &Path, vcs: Vcs) -> Result<bool> {
+    match vcs {
+        Vcs::Jj => {
+            let output = Command::new("jj")
+                .args([
+                    "log",
+                    "-r",
+                    "main..main@origin",
+                    "--no-graph",
+                    "-T",
+                    "commit_id",
+                    "-n",
+                    "1",
+                ])
+                .current_dir(path)
+                .output()
+                .context("Failed to check for remote-only commits")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("jj log for main..main@origin failed:\n{}", stderr);
+            }
+            let remote_only = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(!remote_only.is_empty())
+        }
+        Vcs::Git => {
+            let output = Command::new("git")
+                .args(["rev-list", "main..origin/main", "--count"])
+                .current_dir(path)
+                .output()
+                .context("Failed to check for remote-only commits")?;
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                bail!("git rev-list main..origin/main failed:\n{}", stderr);
+            }
+            let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let count: u32 = count_str.parse().unwrap_or(0);
+            Ok(count > 0)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

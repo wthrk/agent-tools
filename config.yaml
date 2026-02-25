@@ -25,6 +25,9 @@ manage_hooks: true
 # Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
 manage_codex_config: true
 
+# Auto-update agent-tools on startup (fetch + rebuild if updates available)
+auto_update_on_startup: true
+
 # Claude MCP servers to register via `claude mcp add-json -s user`
 # These are synced declaratively: defined servers are added/updated,
 # servers not listed here are left untouched.
