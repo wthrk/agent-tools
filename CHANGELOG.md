@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/wthrk/agent-tools/compare/v1.0.0...v1.1.0) (2026-02-25)
+
+
+### Features
+
+* add cmux hook, codex dotfiles, serena config ([#40](https://github.com/wthrk/agent-tools/issues/40)) ([9a0d76d](https://github.com/wthrk/agent-tools/commit/9a0d76d34bef8c24566aeaf5e63984cbeea05330))
+* add jj support for update and rebase commands ([#28](https://github.com/wthrk/agent-tools/issues/28)) ([b6dc55a](https://github.com/wthrk/agent-tools/commit/b6dc55aad6751cd37d819ea8b4ad3b3afcaddb3a))
+* add startup command for auto-update and sync on SessionStart ([#42](https://github.com/wthrk/agent-tools/issues/42)) ([071c160](https://github.com/wthrk/agent-tools/commit/071c160f5aa05c2866a27b759ced4cf759dc9b48))
+
+
+### Bug Fixes
+
+* address Copilot review feedback on reviewing skill ([#31](https://github.com/wthrk/agent-tools/issues/31)) ([ea546e9](https://github.com/wthrk/agent-tools/commit/ea546e93c1e0519bc3f0e3217368059fdb6c5768))
+* improve skill auto-trigger descriptions ([#32](https://github.com/wthrk/agent-tools/issues/32)) ([547f536](https://github.com/wthrk/agent-tools/commit/547f536697065a68d90e1963318913b860f34811))
+* resolve cargo fmt formatting issue in sync.rs ([#41](https://github.com/wthrk/agent-tools/issues/41)) ([50bacaa](https://github.com/wthrk/agent-tools/commit/50bacaa3eab6dfa66aef35e6e021e377668635dc))
+* use jj diff instead of jj diff --stat for clean check ([#33](https://github.com/wthrk/agent-tools/issues/33)) ([a2049e3](https://github.com/wthrk/agent-tools/commit/a2049e34b132eb05b9cfcd0095d76ef4f879a48c))
+
 ## [1.0.0](https://github.com/wthrk/agent-tools/compare/v0.1.0...v1.0.0) (2026-02-03)
 
 
