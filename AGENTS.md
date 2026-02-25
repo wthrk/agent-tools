@@ -2,7 +2,9 @@
 
 ## Overview
 
-Claude Codeスキル管理CLI。Rust 1.85, Cargo workspace, jj (git禁止)
+CLI tool for managing Claude Code skills globally. Centralizes skills under `~/.agent-tools/skills/`, providing auto-deploy via `config.yaml`, installation into projects, and SKILL.md validation.
+
+Rust 1.85, Cargo workspace, jj (no git)
 
 ## Structure
 
