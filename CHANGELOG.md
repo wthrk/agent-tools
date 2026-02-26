@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/wthrk/agent-tools/compare/v1.1.0...v1.2.0) (2026-02-26)
+
+
+### Features
+
+* harden Claude/Codex configs based on best practices ([#43](https://github.com/wthrk/agent-tools/issues/43)) ([bf485ca](https://github.com/wthrk/agent-tools/commit/bf485ca4cfe1d6959f0861f5ac75615867ab4b78))
+
 ## [1.1.0](https://github.com/wthrk/agent-tools/compare/v1.0.0...v1.1.0) (2026-02-25)
 
 
