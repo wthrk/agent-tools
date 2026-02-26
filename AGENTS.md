@@ -30,6 +30,14 @@ cargo xtask install
 export PATH="$HOME/.agent-tools/bin:$PATH"
 ```
 
+## Quick Checks (single file)
+
+```bash
+cargo fmt -- --check crates/agent-tools/src/<file>.rs
+cargo clippy -p agent-tools -- -D warnings
+cargo test -p agent-tools -- <test_name>
+```
+
 ## Boundaries
 
 - jj使用（git禁止）
