@@ -45,11 +45,11 @@ pub struct Config {
     #[serde(default)]
     pub manage_hooks: bool,
 
-    /// Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
+    /// Manage ~/.codex/config.toml (render from ~/.agent-tools/codex/config.toml + ~/.codex/config.local.toml)
     #[serde(default)]
     pub manage_codex_config: bool,
 
-    /// Claude MCP servers to register via `claude mcp add-json -s user`
+    /// Claude MCP servers synced via `claude mcp` user scope
     #[serde(default)]
     pub claude_mcp_servers: HashMap<String, McpServerConfig>,
 

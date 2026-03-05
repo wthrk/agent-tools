@@ -204,30 +204,39 @@ pub fn run() -> Result<()> {
     println!("{}", "Codex config:".bold());
     let codex_home = paths::codex_home()?;
     let agent_tools_codex_config = agent_tools_home.join("codex/config.toml");
+    let codex_local_override = codex_home.join("config.local.toml");
     let codex_config = codex_home.join("config.toml");
     println!(
-        "  Source:  {}",
+        "  Base:    {}",
         if agent_tools_codex_config.exists() {
             agent_tools_codex_config.display().to_string().green()
         } else {
             format!("{} (not found)", agent_tools_codex_config.display()).dimmed()
         }
     );
+    println!(
+        "  Local:   {}",
+        if codex_local_override.exists() {
+            codex_local_override.display().to_string().green()
+        } else {
+            format!("{} (not found, optional)", codex_local_override.display()).dimmed()
+        }
+    );
     print!("  Target:  ");
     if codex_config.is_symlink() {
         if codex_config.exists() {
-            if let Ok(target) = fs::read_link(&codex_config) {
-                if target == agent_tools_codex_config {
-                    println!("{}", "linked".green());
-                } else {
-                    println!("{} → {}", "symlink".yellow(), target.display());
-                }
+            if let Ok(target_path) = fs::read_link(&codex_config) {
+                println!(
+                    "{} → {}",
+                    "symlink (legacy)".yellow(),
+                    target_path.display()
+                );
             }
         } else {
             println!("{}", "(broken symlink)".red());
         }
     } else if codex_config.exists() {
-        println!("{}", "(file exists, not managed)".yellow());
+        println!("{}", "generated file".green());
     } else {
         println!("{}", "(not found)".dimmed());
     }

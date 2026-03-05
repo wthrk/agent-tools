@@ -22,7 +22,7 @@ manage_claude_md: true
 # Manage ~/.claude/hooks/ (link to ~/.agent-tools/global/hooks/)
 manage_hooks: true
 
-# Manage ~/.codex/config.toml (link to ~/.agent-tools/codex/config.toml)
+# Manage ~/.codex/config.toml (render from ~/.agent-tools/codex/config.toml + ~/.codex/config.local.toml)
 manage_codex_config: true
 
 # Auto-update agent-tools on startup (fetch + rebuild if updates available)
@@ -30,7 +30,7 @@ auto_update_on_startup: true
 
 # Claude MCP servers to register via `claude mcp add-json -s user`
 # These are synced declaratively: defined servers are added/updated,
-# servers not listed here are left untouched.
+# and previously managed servers not listed here are removed.
 claude_mcp_servers:
   serena:
     type: stdio

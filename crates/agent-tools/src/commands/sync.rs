@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
+use std::collections::HashSet;
 use std::fs;
+use std::io::{self, IsTerminal, Write};
 use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::process::Command;
@@ -224,7 +226,7 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     if !config.claude_mcp_servers.is_empty() {
         println!();
         println!("{}", "Claude MCP servers:".bold());
-        sync_claude_mcp_servers(&config, dry_run)?;
+        sync_claude_mcp_servers(&config, &agent_tools_home, dry_run)?;
     }
 
     // Warn about settings/hooks dependency
@@ -552,85 +554,6 @@ fn sync_hooks(
     Ok(())
 }
 
-fn sync_file_link(
-    source: &Path,
-    target: &Path,
-    manage: bool,
-    manage_key: &str,
-    dry_run: bool,
-) -> Result<()> {
-    if !manage {
-        println!("  {} Not managed ({manage_key}: false)", "·".dimmed());
-        return Ok(());
-    }
-
-    if !source.exists() {
-        println!("  {} Source not found: {}", "!".yellow(), source.display());
-        return Ok(());
-    }
-
-    // Ensure parent directory exists
-    if let Some(parent) = target.parent() {
-        if !parent.exists() {
-            if dry_run {
-                println!("  {} Would create {}", "→".blue(), parent.display());
-            } else {
-                fs::create_dir_all(parent)
-                    .with_context(|| format!("Failed to create {}", parent.display()))?;
-                println!("  {} Created {}", "✓".green(), parent.display());
-            }
-        }
-    }
-
-    if target.is_symlink() {
-        if let Ok(link_target) = fs::read_link(target) {
-            if link_target == source {
-                println!("  {} Already linked", "✓".green());
-                return Ok(());
-            }
-            if !target.exists() {
-                if dry_run {
-                    println!(
-                        "  {} Would repair broken symlink → {}",
-                        "→".blue(),
-                        source.display()
-                    );
-                } else {
-                    fs::remove_file(target)?;
-                    symlink(source, target)?;
-                    println!(
-                        "  {} Repaired broken symlink → {}",
-                        "✓".green(),
-                        source.display()
-                    );
-                }
-                return Ok(());
-            }
-            println!(
-                "  {} Exists but points to different target: {}",
-                "!".yellow(),
-                link_target.display()
-            );
-            return Ok(());
-        }
-    } else if target.exists() {
-        println!(
-            "  {} Exists but is not a symlink (not managed)",
-            "!".yellow()
-        );
-        return Ok(());
-    }
-
-    if dry_run {
-        println!("  {} Would link to {}", "→".blue(), source.display());
-    } else {
-        symlink(source, target)?;
-        println!("  {} Linked to {}", "✓".green(), source.display());
-    }
-
-    Ok(())
-}
-
 fn sync_codex_config(
     agent_tools_home: &Path,
     codex_home: &Path,
@@ -638,6 +561,7 @@ fn sync_codex_config(
     dry_run: bool,
 ) -> Result<()> {
     let source = agent_tools_home.join("codex/config.toml");
+    let local_override = codex_home.join("config.local.toml");
     let target = codex_home.join("config.toml");
 
     if !manage {
@@ -653,21 +577,65 @@ fn sync_codex_config(
         return Ok(());
     }
 
-    if target.exists() && !target.is_symlink() {
+    let mut merged = load_toml_value(&source)?;
+    if local_override.exists() {
+        let local = load_toml_value(&local_override)?;
+        merge_toml_values(&mut merged, local);
+    }
+    let rendered = toml::to_string_pretty(&merged)
+        .context("Failed to serialize merged codex config as TOML")?;
+
+    if dry_run {
+        if local_override.exists() {
+            println!(
+                "  {} Would render {} + {}",
+                "→".blue(),
+                source.display(),
+                local_override.display()
+            );
+        } else {
+            println!("  {} Would render {}", "→".blue(), source.display());
+        }
+        if target.is_symlink() {
+            println!(
+                "  {} Would replace symlink target {}",
+                "→".blue(),
+                target.display()
+            );
+        } else if target.exists() {
+            println!("  {} Would update {}", "→".blue(), target.display());
+        } else {
+            println!("  {} Would create {}", "→".blue(), target.display());
+        }
+        return Ok(());
+    }
+
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Failed to create {}", parent.display()))?;
+    }
+
+    if target.exists() && target.is_file() && !target.is_symlink() {
+        let existing = fs::read_to_string(&target)
+            .with_context(|| format!("Failed to read existing {}", target.display()))?;
+        if existing == rendered {
+            println!("  {} Already up to date", "✓".green());
+            return Ok(());
+        }
+    }
+
+    if target.is_symlink() {
+        fs::remove_file(&target)
+            .with_context(|| format!("Failed to remove legacy symlink {}", target.display()))?;
+        println!(
+            "  {} Removed legacy symlink {}",
+            "!".yellow(),
+            target.display()
+        );
+    } else if target.exists() {
         let backup_dir = paths::backups_dir()?;
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
         let backup_path = backup_dir.join(format!("codex_config_{timestamp}.toml"));
-
-        if dry_run {
-            println!(
-                "  {} Would backup existing file to {}",
-                "→".blue(),
-                backup_path.display()
-            );
-            println!("  {} Would link to {}", "→".blue(), source.display());
-            return Ok(());
-        }
-
         fs::create_dir_all(&backup_dir)
             .with_context(|| format!("Failed to create {}", backup_dir.display()))?;
         fs::rename(&target, &backup_path).with_context(|| {
@@ -682,18 +650,73 @@ fn sync_codex_config(
             "!".yellow(),
             backup_path.display()
         );
-
-        symlink(&source, &target)
-            .with_context(|| format!("Failed to create symlink to {}", source.display()))?;
-        println!("  {} Linked to {}", "✓".green(), source.display());
-        return Ok(());
     }
 
-    sync_file_link(&source, &target, manage, "manage_codex_config", dry_run)
+    fs::write(&target, rendered)
+        .with_context(|| format!("Failed to write {}", target.display()))?;
+    println!("  {} Rendered {}", "✓".green(), target.display());
+
+    Ok(())
 }
 
-fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
-    for (name, server) in &config.claude_mcp_servers {
+fn sync_claude_mcp_servers(config: &Config, agent_tools_home: &Path, dry_run: bool) -> Result<()> {
+    let state_path = agent_tools_home.join("state/claude_mcp_managed.json");
+    let previous_names = load_managed_mcp_names(&state_path)?;
+    let current_names: HashSet<String> = config.claude_mcp_servers.keys().cloned().collect();
+    let mut stale_names: Vec<String> = previous_names.difference(&current_names).cloned().collect();
+    stale_names.sort();
+    let stdin_is_terminal = io::stdin().is_terminal();
+    let mut not_removed = Vec::new();
+
+    for name in &stale_names {
+        if dry_run {
+            println!("  {} Would remove stale '{}'", "→".blue(), name.cyan());
+            continue;
+        }
+
+        if !stdin_is_terminal {
+            println!(
+                "  {} Skipped stale '{}' (non-interactive session)",
+                "!".yellow(),
+                name.cyan()
+            );
+            not_removed.push(name.clone());
+            continue;
+        }
+
+        if !confirm_mcp_removal(name)? {
+            println!(
+                "  {} Kept stale '{}' by user choice",
+                "·".dimmed(),
+                name.cyan()
+            );
+            not_removed.push(name.clone());
+            continue;
+        }
+
+        let output = Command::new("claude")
+            .args(["mcp", "remove", "-s", "user", name])
+            .output()
+            .with_context(|| format!("Failed to run 'claude mcp remove' for '{name}'"))?;
+        if output.status.success() {
+            println!("  {} Removed stale '{}'", "✓".green(), name.cyan());
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            println!(
+                "  {} Failed to remove stale '{}': {}",
+                "!".yellow(),
+                name.cyan(),
+                stderr.trim()
+            );
+        }
+    }
+
+    let mut names: Vec<String> = config.claude_mcp_servers.keys().cloned().collect();
+    names.sort();
+    for name in &names {
+        let Some(server) = config.claude_mcp_servers.get(name) else {
+            continue;
+        };
         let json = serde_json::json!({
             "type": server.transport_type,
             "command": server.command,
@@ -743,5 +766,140 @@ fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
         }
     }
 
+    if !dry_run {
+        let mut next_names: HashSet<String> = names.into_iter().collect();
+        for name in not_removed {
+            next_names.insert(name);
+        }
+        let mut next_names_vec: Vec<String> = next_names.into_iter().collect();
+        next_names_vec.sort();
+        save_managed_mcp_names(&state_path, &next_names_vec)?;
+    }
+
     Ok(())
+}
+
+fn confirm_mcp_removal(name: &str) -> Result<bool> {
+    print!("  ? Remove stale MCP '{}'? [y/N]: ", name.cyan());
+    io::stdout().flush().context("Failed to flush stdout")?;
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .context("Failed to read user input")?;
+
+    let normalized = input.trim().to_ascii_lowercase();
+    Ok(normalized == "y" || normalized == "yes")
+}
+
+fn load_toml_value(path: &Path) -> Result<toml::Value> {
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read TOML file: {}", path.display()))?;
+    toml::from_str(&content)
+        .with_context(|| format!("Failed to parse TOML file: {}", path.display()))
+}
+
+fn merge_toml_values(base: &mut toml::Value, overlay: toml::Value) {
+    match (base, overlay) {
+        (toml::Value::Table(base_table), toml::Value::Table(overlay_table)) => {
+            for (key, overlay_value) in overlay_table {
+                if let Some(base_value) = base_table.get_mut(&key) {
+                    merge_toml_values(base_value, overlay_value);
+                } else {
+                    base_table.insert(key, overlay_value);
+                }
+            }
+        }
+        (base_value, overlay_value) => {
+            *base_value = overlay_value;
+        }
+    }
+}
+
+fn load_managed_mcp_names(path: &Path) -> Result<HashSet<String>> {
+    if !path.exists() {
+        return Ok(HashSet::new());
+    }
+
+    let content =
+        fs::read_to_string(path).with_context(|| format!("Failed to read {}", path.display()))?;
+    let names: Vec<String> = serde_json::from_str(&content)
+        .with_context(|| format!("Failed to parse {}", path.display()))?;
+    Ok(names.into_iter().collect())
+}
+
+fn save_managed_mcp_names(path: &Path, names: &[String]) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Failed to create {}", parent.display()))?;
+    }
+    let content = serde_json::to_string_pretty(names)
+        .with_context(|| format!("Failed to serialize {}", path.display()))?;
+    fs::write(path, content).with_context(|| format!("Failed to write {}", path.display()))?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::merge_toml_values;
+    use anyhow::Result;
+
+    #[test]
+    fn merge_toml_values_recursively_merges_tables() -> Result<()> {
+        let mut base: toml::Value = toml::from_str(
+            r#"
+model = "gpt-5"
+
+[providers.main]
+timeout = 30
+retries = 2
+"#,
+        )?;
+        let local: toml::Value = toml::from_str(
+            r#"
+model = "gpt-5.3-codex"
+
+[providers.main]
+timeout = 10
+"#,
+        )?;
+
+        merge_toml_values(&mut base, local);
+
+        let expected: toml::Value = toml::from_str(
+            r#"
+model = "gpt-5.3-codex"
+
+[providers.main]
+timeout = 10
+retries = 2
+"#,
+        )?;
+        assert_eq!(base, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn merge_toml_values_replaces_arrays() -> Result<()> {
+        let mut base: toml::Value = toml::from_str(
+            r#"
+tools = ["a", "b", "c"]
+"#,
+        )?;
+        let local: toml::Value = toml::from_str(
+            r#"
+tools = ["x"]
+"#,
+        )?;
+
+        merge_toml_values(&mut base, local);
+
+        let expected: toml::Value = toml::from_str(
+            r#"
+tools = ["x"]
+"#,
+        )?;
+        assert_eq!(base, expected);
+        Ok(())
+    }
 }
