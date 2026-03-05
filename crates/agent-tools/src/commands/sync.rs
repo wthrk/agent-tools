@@ -637,13 +637,59 @@ fn sync_codex_config(
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    sync_file_link(
-        &agent_tools_home.join("codex/config.toml"),
-        &codex_home.join("config.toml"),
-        manage,
-        "manage_codex_config",
-        dry_run,
-    )
+    let source = agent_tools_home.join("codex/config.toml");
+    let target = codex_home.join("config.toml");
+
+    if !manage {
+        println!(
+            "  {} Not managed (manage_codex_config: false)",
+            "·".dimmed()
+        );
+        return Ok(());
+    }
+
+    if !source.exists() {
+        println!("  {} Source not found: {}", "!".yellow(), source.display());
+        return Ok(());
+    }
+
+    if target.exists() && !target.is_symlink() {
+        let backup_dir = paths::backups_dir()?;
+        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+        let backup_path = backup_dir.join(format!("codex_config_{timestamp}.toml"));
+
+        if dry_run {
+            println!(
+                "  {} Would backup existing file to {}",
+                "→".blue(),
+                backup_path.display()
+            );
+            println!("  {} Would link to {}", "→".blue(), source.display());
+            return Ok(());
+        }
+
+        fs::create_dir_all(&backup_dir)
+            .with_context(|| format!("Failed to create {}", backup_dir.display()))?;
+        fs::rename(&target, &backup_path).with_context(|| {
+            format!(
+                "Failed to backup existing codex config from {} to {}",
+                target.display(),
+                backup_path.display()
+            )
+        })?;
+        println!(
+            "  {} Backed up existing file to {}",
+            "!".yellow(),
+            backup_path.display()
+        );
+
+        symlink(&source, &target)
+            .with_context(|| format!("Failed to create symlink to {}", source.display()))?;
+        println!("  {} Linked to {}", "✓".green(), source.display());
+        return Ok(());
+    }
+
+    sync_file_link(&source, &target, manage, "manage_codex_config", dry_run)
 }
 
 fn sync_claude_mcp_servers(config: &Config, dry_run: bool) -> Result<()> {
