@@ -24,6 +24,7 @@ mod integration {
     mod build;
     mod cleanup;
     mod link_unlink;
+    mod profile;
     mod skill_diff;
     mod skill_install;
     mod skill_installed;
