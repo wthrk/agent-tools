@@ -1,0 +1,6 @@
+# Sub-agent config: reviewer
+# Strict review profile with deeper reasoning in read-only mode.
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+sandbox_mode = "read-only"

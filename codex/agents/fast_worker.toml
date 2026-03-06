@@ -1,0 +1,6 @@
+# Sub-agent config: fast_worker
+# Fast path for small, scoped tasks.
+model = "gpt-5.3-codex-spark"
+model_reasoning_effort = "low"
+model_reasoning_summary = "auto"
+sandbox_mode = "workspace-write"
