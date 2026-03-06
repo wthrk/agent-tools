@@ -16,20 +16,7 @@ project_doc_max_bytes = 65536
 profile = "daily"
 
 # === Projects ===
-[projects."/Users/abe/works/liveview-server-rust"]
-trust_level = "trusted"
-
-[projects."/Users/abe/works/liveview-client-flutter"]
-trust_level = "trusted"
-
-[projects."/Users/abe/hoge"]
-trust_level = "trusted"
-
-[projects."/Users/abe"]
-trust_level = "untrusted"
-
-[projects."/Users/abe/works/agentrev"]
-trust_level = "trusted"
+# Keep project trust entries in ~/.codex/config.local.toml (environment-specific).
 
 # === MCP Servers ===
 [mcp_servers.serena]
@@ -81,16 +68,16 @@ max_threads = 12
 
 [agents.explorer]
 description = "Codebase research agent. Use for all code investigation, no edits."
-config_file = "/Users/abe/.codex/agents/explorer.toml"
+config_file = "agents/explorer.toml"
 
 [agents.worker]
 description = "Coding and bug fix agent. Use for implementation, refactoring, and running tests."
-config_file = "/Users/abe/.codex/agents/worker.toml"
+config_file = "agents/worker.toml"
 
 [agents.fast_worker]
 description = "Fast scoped implementation agent."
-config_file = "/Users/abe/.codex/agents/fast_worker.toml"
+config_file = "agents/fast_worker.toml"
 
 [agents.reviewer]
 description = "Code review agent. Finds security risks, error handling gaps, and correctness issues."
-config_file = "/Users/abe/.codex/agents/reviewer.toml"
+config_file = "agents/reviewer.toml"

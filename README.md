@@ -11,6 +11,9 @@ agent-toolsは以下の機能を提供します:
 - **グローバルスキル管理**: `~/.agent-tools/skills/` でスキルを一元管理
 - **プロジェクトへのインストール**: グローバルスキルをプロジェクトにコピー
 - **自動デプロイ**: `config.yaml` で指定したスキルを `~/.claude/skills/` にリンク
+- **Claude MCP同期**: `claude_mcp_servers` を同期（不要になった managed MCP は対話確認で削除）
+- **Codex設定生成**: `codex/config.toml` と `~/.codex/config.local.toml` をマージして `~/.codex/config.toml` を生成
+- **Codexサブエージェント同期**: `~/.agent-tools/codex/agents/` を `~/.codex/agents/` に同期
 - **スキル検証**: SKILL.md のフロントマター・構造を検証
 
 ## 前提条件
@@ -98,6 +101,10 @@ manage_plugins: false
 | `auto_deploy_skills` | `~/.claude/skills/` に自動リンクするスキル名 |
 | `manage_settings` | settings.jsonを管理するか |
 | `manage_plugins` | plugins/を管理するか |
+| `manage_claude_md` | `~/.claude/CLAUDE.md` を管理するか |
+| `manage_hooks` | `~/.claude/hooks/` を管理するか |
+| `manage_codex_config` | `~/.codex/config.toml` を生成管理するか（base + local マージ） |
+| `claude_mcp_servers` | Claude MCP サーバー定義（同期対象） |
 
 ## ディレクトリ構造
 
@@ -111,11 +118,25 @@ manage_plugins: false
 │       ├── SKILL.md
 │       ├── README.md
 │       └── AGENTS.md
+├── codex/
+│   ├── config.toml    # Codex共通base設定
+│   └── agents/        # Codexサブエージェント設定
 ├── backups/       # バックアップ
 ├── config.yaml    # 設定
 ├── settings.json  # (任意) manage_settings: true時
 └── plugins/       # (任意) manage_plugins: true時
 ```
+
+### Codex ローカル構造（生成先）
+
+```
+~/.codex/
+├── config.toml         # 生成物（base + config.local.toml）
+├── config.local.toml   # 端末固有設定（任意）
+└── agents/             # codex/agents から同期
+```
+
+`config_file` は相対パス（例: `agents/worker.toml`）で管理してください。
 
 ### プロジェクト構造
 
@@ -205,6 +226,7 @@ updated_at: 2026-01-30T12:00:00Z
 |------|------|----------|
 | `AGENT_TOOLS_HOME` | ホームディレクトリ | `~/.agent-tools` |
 | `CLAUDE_HOME` | Claudeホーム | `~/.claude` |
+| `CODEX_HOME` | Codexホーム | `~/.codex` |
 
 ## トラブルシューティング
 
@@ -215,6 +237,11 @@ updated_at: 2026-01-30T12:00:00Z
 ### `Name must match pattern...`
 
 スキル名は小文字英数字とハイフンのみ使用可能です。先頭と末尾は英数字である必要があります。
+
+### `sync` で MCP 削除確認が出る
+
+`claude_mcp_servers` から削除した managed MCP は、`sync` 実行時に対話確認（`y/N`）のうえで削除されます。  
+非対話セッションでは安全のため削除せずスキップされます。
 
 ## 開発
 

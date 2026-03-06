@@ -8,6 +8,7 @@ use std::path::Path;
 use std::process::Command;
 
 use crate::config::Config;
+use crate::fs_utils;
 use crate::paths;
 
 pub fn run(dry_run: bool, prune: bool) -> Result<()> {
@@ -216,6 +217,12 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "Codex config:".bold());
     sync_codex_config(
+        &agent_tools_home,
+        &codex_home,
+        config.manage_codex_config,
+        dry_run,
+    )?;
+    sync_codex_agents(
         &agent_tools_home,
         &codex_home,
         config.manage_codex_config,
@@ -656,6 +663,66 @@ fn sync_codex_config(
         .with_context(|| format!("Failed to write {}", target.display()))?;
     println!("  {} Rendered {}", "✓".green(), target.display());
 
+    Ok(())
+}
+
+fn sync_codex_agents(
+    agent_tools_home: &Path,
+    codex_home: &Path,
+    manage: bool,
+    dry_run: bool,
+) -> Result<()> {
+    let source = agent_tools_home.join("codex/agents");
+    let target = codex_home.join("agents");
+
+    if !manage {
+        return Ok(());
+    }
+    if !source.exists() {
+        return Ok(());
+    }
+
+    if dry_run {
+        println!(
+            "  {} Would sync agents {} -> {}",
+            "→".blue(),
+            source.display(),
+            target.display()
+        );
+        return Ok(());
+    }
+
+    if target.is_symlink() {
+        fs::remove_file(&target)
+            .with_context(|| format!("Failed to remove legacy symlink {}", target.display()))?;
+    } else if target.exists() {
+        let backup_dir = paths::backups_dir()?;
+        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+        let backup_path = backup_dir.join(format!("codex_agents_{timestamp}"));
+        fs::create_dir_all(&backup_dir)
+            .with_context(|| format!("Failed to create {}", backup_dir.display()))?;
+        fs::rename(&target, &backup_path).with_context(|| {
+            format!(
+                "Failed to backup existing codex agents from {} to {}",
+                target.display(),
+                backup_path.display()
+            )
+        })?;
+        println!(
+            "  {} Backed up existing agents to {}",
+            "!".yellow(),
+            backup_path.display()
+        );
+    }
+
+    fs_utils::copy_dir_recursive(&source, &target).with_context(|| {
+        format!(
+            "Failed to copy codex agents from {} to {}",
+            source.display(),
+            target.display()
+        )
+    })?;
+    println!("  {} Synced agents to {}", "✓".green(), target.display());
     Ok(())
 }
 
