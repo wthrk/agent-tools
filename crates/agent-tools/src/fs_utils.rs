@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
+use std::os::unix::fs::symlink;
 use std::path::Path;
 
 /// Recursively copy a directory
@@ -14,8 +15,12 @@ pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
         let entry = entry?;
         let src_path = entry.path();
         let dst_path = dst.join(entry.file_name());
+        let file_type = entry.file_type()?;
 
-        if src_path.is_dir() {
+        if file_type.is_symlink() {
+            let target = fs::read_link(&src_path)?;
+            symlink(&target, &dst_path)?;
+        } else if file_type.is_dir() {
             copy_dir_recursive(&src_path, &dst_path)?;
         } else {
             fs::copy(&src_path, &dst_path)?;
@@ -108,6 +113,24 @@ mod tests {
 
         assert!(dst_path.join("file.txt").exists());
         assert!(dst_path.join("subdir/nested.txt").exists());
+    }
+
+    #[test]
+    fn test_copy_dir_recursive_preserves_broken_symlink() -> Result<()> {
+        let src = TempDir::new()?;
+        let dst = TempDir::new()?;
+        let dst_path = dst.path().join("copied");
+
+        let link_path = src.path().join("broken");
+        symlink("missing-target", &link_path)?;
+
+        copy_dir_recursive(src.path(), &dst_path)?;
+
+        let copied_link = dst_path.join("broken");
+        assert!(copied_link.is_symlink());
+        let target = fs::read_link(copied_link)?;
+        assert_eq!(target, std::path::PathBuf::from("missing-target"));
+        Ok(())
     }
 
     #[test]

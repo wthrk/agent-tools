@@ -31,6 +31,41 @@ pub fn backups_dir() -> Result<PathBuf> {
     Ok(agent_tools_home()?.join("backups"))
 }
 
+/// Get the templates root (~/.agent-tools/templates)
+pub fn templates_dir() -> Result<PathBuf> {
+    Ok(agent_tools_home()?.join("templates"))
+}
+
+/// Get the Claude profile templates dir (~/.agent-tools/templates/claude)
+pub fn claude_templates_dir() -> Result<PathBuf> {
+    Ok(templates_dir()?.join("claude"))
+}
+
+/// Get the Codex profile templates dir (~/.agent-tools/templates/codex)
+pub fn codex_templates_dir() -> Result<PathBuf> {
+    Ok(templates_dir()?.join("codex"))
+}
+
+/// Get local state root (~/.agent-tools/.local)
+pub fn local_state_root() -> Result<PathBuf> {
+    Ok(agent_tools_home()?.join(".local"))
+}
+
+/// Get active template links dir (~/.agent-tools/.local/active)
+pub fn active_templates_dir() -> Result<PathBuf> {
+    Ok(local_state_root()?.join("active"))
+}
+
+/// Get profile state dir (~/.agent-tools/.local/state)
+pub fn profile_state_dir() -> Result<PathBuf> {
+    Ok(local_state_root()?.join("state"))
+}
+
+/// Get profile snapshots dir (~/.agent-tools/.local/snapshots)
+pub fn profile_snapshots_dir() -> Result<PathBuf> {
+    Ok(local_state_root()?.join("snapshots"))
+}
+
 /// Get the Claude directory (~/.claude)
 /// Can be overridden with CLAUDE_HOME environment variable
 pub fn claude_home() -> Result<PathBuf> {
