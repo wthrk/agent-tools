@@ -230,11 +230,9 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     )?;
 
     // Manage Claude MCP servers
-    if !config.claude_mcp_servers.is_empty() {
-        println!();
-        println!("{}", "Claude MCP servers:".bold());
-        sync_claude_mcp_servers(&config, &agent_tools_home, dry_run)?;
-    }
+    println!();
+    println!("{}", "Claude MCP servers:".bold());
+    sync_claude_mcp_servers(&config, &agent_tools_home, dry_run)?;
 
     // Warn about settings/hooks dependency
     if config.manage_settings && !config.manage_hooks {
@@ -775,6 +773,8 @@ fn sync_claude_mcp_servers(config: &Config, agent_tools_home: &Path, dry_run: bo
                 name.cyan(),
                 stderr.trim()
             );
+            // Keep stale entries that failed to remove so they are retried.
+            not_removed.push(name.clone());
         }
     }
 
