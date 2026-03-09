@@ -6,6 +6,7 @@ use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
+use crate::config::validate_skill_name;
 use crate::fs_utils;
 use crate::paths;
 
@@ -17,6 +18,8 @@ pub struct ProfileState {
 }
 
 pub fn use_profile(name: &str) -> Result<()> {
+    validate_profile_name(name)?;
+
     let claude_templates = paths::claude_templates_dir()?;
     let codex_templates = paths::codex_templates_dir()?;
     let claude_source = claude_templates.join(name);
@@ -178,7 +181,7 @@ fn collect_target_profiles(
 }
 
 fn snapshot_home_dirs(snapshots_dir: &Path) -> Result<()> {
-    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S").to_string();
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S_%9f").to_string();
     let snapshot_root = snapshots_dir.join(timestamp);
     let mut copied = false;
 
@@ -221,12 +224,19 @@ fn resolve_active_source(path: &Path) -> Option<PathBuf> {
         } else {
             path.parent()?.join(target)
         };
-        return Some(absolute);
+        if absolute.is_dir() {
+            return Some(absolute);
+        }
+        return None;
     }
     if path.is_dir() {
         return Some(path.to_path_buf());
     }
     None
+}
+
+fn validate_profile_name(name: &str) -> Result<()> {
+    validate_skill_name(name).map_err(|e| anyhow::anyhow!("Invalid profile name: {}", e))
 }
 
 fn ensure_runtime_profile(template_dir: &Path, runtime_dir: &Path) -> Result<()> {
@@ -325,7 +335,7 @@ fn set_active_link(link_path: &Path, source_dir: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_active_source;
+    use super::{resolve_active_source, validate_profile_name};
     use anyhow::Result;
     use std::fs;
     use std::os::unix::fs::symlink;
@@ -349,5 +359,23 @@ mod tests {
         let resolved = resolve_active_source(dir.path()).expect("resolved");
         assert_eq!(resolved, dir.path());
         Ok(())
+    }
+
+    #[test]
+    fn resolve_active_source_for_symlink_to_file_returns_none() -> Result<()> {
+        let dir = TempDir::new()?;
+        let file = dir.path().join("file.txt");
+        let link = dir.path().join("link");
+        fs::write(&file, "x")?;
+        symlink(&file, &link)?;
+        let resolved = resolve_active_source(&link);
+        assert!(resolved.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn validate_profile_name_rejects_path_traversal() {
+        assert!(validate_profile_name("../bad").is_err());
+        assert!(validate_profile_name("bad/name").is_err());
     }
 }
