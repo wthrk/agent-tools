@@ -1,0 +1,17 @@
+name: runpod-llm
+image: ghcr.io/your-org/agent-tools-runpod-vllm:latest
+gpu_id: NVIDIA L40S
+cloud_type: SECURE
+compute_type: GPU
+gpu_count: 1
+container_disk_in_gb: 30
+volume_in_gb: 80
+volume_mount_path: /workspace
+ports:
+  - 8000/http
+env:
+  MODEL_ID: Qwen/Qwen2.5-14B-Instruct
+  VLLM_PORT: "8000"
+  TENSOR_PARALLEL_SIZE: "1"
+  MAX_MODEL_LEN: "8192"
+start_after_create: true
