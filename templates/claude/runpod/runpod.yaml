@@ -1,17 +1,12 @@
+deployment: serverless
 name: runpod-llm
-image: ghcr.io/your-org/agent-tools-runpod-vllm:latest
+template_id: bx2oyiuhiv
+claude_base_url_template: https://api.runpod.ai/v2/{endpoint_id}/openai
+claude_auth_token_env: RUNPOD_API_KEY
 gpu_id: NVIDIA L40S
-cloud_type: SECURE
 compute_type: GPU
 gpu_count: 1
-container_disk_in_gb: 30
-volume_in_gb: 80
+workers_min: 1
+workers_max: 2
+volume_in_gb: 120
 volume_mount_path: /workspace
-ports:
-  - 8000/http
-env:
-  MODEL_ID: Qwen/Qwen2.5-14B-Instruct
-  VLLM_PORT: "8000"
-  TENSOR_PARALLEL_SIZE: "1"
-  MAX_MODEL_LEN: "8192"
-start_after_create: true

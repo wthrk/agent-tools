@@ -7,6 +7,7 @@ pub mod profile;
 pub mod rebase;
 pub mod runpod;
 pub mod skill;
+pub mod start;
 pub mod startup;
 pub mod status;
 pub mod sync;
