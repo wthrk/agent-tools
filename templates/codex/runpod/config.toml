@@ -1,0 +1,11 @@
+model = "Qwen/Qwen2.5-14B-Instruct"
+model_provider = "runpod_serverless"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[model_providers.runpod_serverless]
+name = "RunPod Serverless"
+# Set your endpoint id in local overlay (config.local.toml) and override this value.
+base_url = "https://api.runpod.ai/v2/REPLACE_ENDPOINT_ID/openai/v1"
+env_key = "RUNPOD_API_KEY"
+wire_api = "responses"

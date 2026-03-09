@@ -19,15 +19,42 @@ if [[ -n "${stdin_payload}" ]] && command -v jq &>/dev/null; then
     fi
 fi
 
+# 追加コンテキストを必要に応じて積み上げる
+context_lines=()
+
 # .jj 検出時は jj ワークフロールールを注入
 if [[ -d "${cwd}/.jj" ]]; then
-    cat <<'EOF'
+    context_lines+=("jj detected. Use /jj skill for version control operations.")
+fi
+
+# RunPod endpoint の期待値と ANTHROPIC_BASE_URL の整合性チェック
+expected_base_url_file="${HOME}/.claude/runpod_expected_anthropic_base_url"
+if [[ -f "${expected_base_url_file}" ]]; then
+    expected_base_url="$(cat "${expected_base_url_file}" 2>/dev/null || true)"
+    expected_base_url="${expected_base_url//$'\n'/}"
+    current_base_url="${ANTHROPIC_BASE_URL:-}"
+    if [[ -n "${expected_base_url}" ]] && [[ "${current_base_url}" != "${expected_base_url}" ]]; then
+        context_lines+=("RunPod profile is active but ANTHROPIC_BASE_URL is not synced. Run: source ~/.claude/runpod.env")
+    fi
+fi
+
+if [[ ${#context_lines[@]} -gt 0 ]]; then
+    joined="$(printf '%s\n' "${context_lines[@]}")"
+    if command -v jq &>/dev/null; then
+        jq -n --arg ctx "${joined}" \
+          '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":$ctx}}'
+    else
+        escaped="${joined//\\/\\\\}"
+        escaped="${escaped//\"/\\\"}"
+        escaped="${escaped//$'\n'/\\n}"
+        cat <<EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "jj detected. Use /jj skill for version control operations."
+    "additionalContext": "${escaped}"
   }
 }
 EOF
+    fi
 fi
 exit 0

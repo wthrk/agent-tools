@@ -1,19 +1,30 @@
 # Codex RunPod Profile Template
 
-This directory is a template root for the `runpod` Codex profile.
+This directory is the `runpod` Codex profile template root.
 
-Place profile-specific files here (for example `config.toml`, `agents/`, or
-other Codex settings) that should be copied into the runtime profile when
-running:
+`config.toml` configures Codex to use a RunPod Serverless OpenAI-compatible
+endpoint.
+
+## Activate profile
 
 ```bash
 agent-tools use runpod
 ```
 
-Expected behavior:
-- Files under `templates/codex/runpod/` are used as the source template.
-- Runtime state is created under `~/.agent-tools/.local/profiles/runpod/codex`.
-- `~/.codex` is switched to point at that runtime profile directory.
+## Endpoint base_url update
 
-Keep this directory free of machine-local secrets. Use local overlays for
-environment-specific values.
+`agent-tools runpod up runpod` updates:
+- `~/.codex/config.local.toml`
+- `~/.codex/config.toml`
+
+with the created endpoint id.
+
+Export API key:
+
+```bash
+export RUNPOD_API_KEY=...
+```
+
+When `manage_codex_config: true`, `agent-tools sync` merges:
+- template base: `templates/codex/runpod/config.toml`
+- local overlay: `~/.codex/config.local.toml`
