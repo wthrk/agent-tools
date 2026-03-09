@@ -72,7 +72,7 @@ enum Commands {
     /// Clean up old backups
     Cleanup,
 
-    /// Use a named profile template and sync immediately
+    /// Use a named profile template
     Use {
         /// Profile name
         name: String,
