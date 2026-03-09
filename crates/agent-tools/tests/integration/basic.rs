@@ -30,5 +30,6 @@ fn test_help_shows_subcommands() {
         .stdout(predicate::str::contains("link"))
         .stdout(predicate::str::contains("unlink"))
         .stdout(predicate::str::contains("skill"))
-        .stdout(predicate::str::contains("cleanup"));
+        .stdout(predicate::str::contains("cleanup"))
+        .stdout(predicate::str::contains("runpod"));
 }

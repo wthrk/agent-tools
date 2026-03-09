@@ -1,19 +1,36 @@
 # Claude RunPod Profile Template
 
-This directory is a template root for the `runpod` Claude profile.
+This directory is the `runpod` profile template root.
 
-Place profile-specific files here (for example `config.yaml`, hook files, or
-other Claude settings) that should be copied into the runtime profile when
-running:
+`runpod.yaml` is profile-bound pod config used by:
 
 ```bash
-agent-tools use runpod
+agent-tools runpod up runpod
 ```
 
-Expected behavior:
-- Files under `templates/claude/runpod/` are used as the source template.
-- Runtime state is created under `~/.agent-tools/.local/profiles/runpod/claude`.
-- `~/.claude` is switched to point at that runtime profile directory.
+The `docker/` directory contains an image template that downloads/serves the
+model at container startup via vLLM.
 
-Keep this directory free of machine-local secrets. Use local overlays for
-environment-specific values.
+## Build and push image
+
+```bash
+cd templates/claude/runpod/docker
+docker build -t ghcr.io/your-org/agent-tools-runpod-vllm:latest .
+docker push ghcr.io/your-org/agent-tools-runpod-vllm:latest
+```
+
+Update `runpod.yaml` `image` to the published image.
+
+## Launch
+
+```bash
+agent-tools runpod up runpod
+```
+
+Flow:
+1. `agent-tools use runpod` (profile switch)
+2. `runpodctl pod create ...` from `runpod.yaml`
+3. `runpodctl pod start <pod-id>`
+
+Do not store secrets in this repository. Set `RUNPOD_API_KEY` and model auth
+tokens via environment variables.

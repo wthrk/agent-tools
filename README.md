@@ -66,6 +66,7 @@ agent-tools skill install my-skill
 | `build` | ビルド＆インストール |
 | `update` | アップデート（git pull && cargo build） |
 | `cleanup` | 古いバックアップ削除 |
+| `runpod up <profile>` | `templates/claude/<profile>/runpod.yaml` に基づき Pod を作成・起動 |
 
 ### skill サブコマンド
 
@@ -137,6 +138,35 @@ manage_plugins: false
 ```
 
 `config_file` は相対パス（例: `agents/worker.toml`）で管理してください。
+
+### RunPod プロファイル設定
+
+RunPod の設定は profile に紐づけて `templates/claude/<profile>/runpod.yaml` に配置します。
+
+例:
+
+```yaml
+name: runpod-llm
+template_id: runpod-torch-v21
+gpu_id: NVIDIA RTX 4090
+cloud_type: SECURE
+compute_type: GPU
+gpu_count: 1
+container_disk_in_gb: 20
+ports:
+  - 8000/http
+start_after_create: true
+```
+
+実行:
+
+```bash
+agent-tools runpod up runpod
+```
+
+Dockerでモデル起動を行う場合は `templates/claude/<profile>/docker/` の
+`Dockerfile` と `entrypoint.sh` を使ってイメージを作成・pushし、
+`runpod.yaml` の `image` に設定してください。
 
 ### プロジェクト構造
 

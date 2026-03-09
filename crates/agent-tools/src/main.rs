@@ -83,6 +83,12 @@ enum Commands {
 
     /// Show current/previous profile state
     Current,
+
+    /// Manage RunPod from profile-bound config
+    Runpod {
+        #[command(subcommand)]
+        command: RunpodCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -170,6 +176,15 @@ enum SkillCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum RunpodCommands {
+    /// Create and start a pod using templates/claude/<profile>/runpod.yaml
+    Up {
+        /// Profile name
+        profile: String,
+    },
+}
+
 fn main() -> anyhow::Result<()> {
     // Check OS (only macOS and Linux supported)
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -232,5 +247,8 @@ fn main() -> anyhow::Result<()> {
         Commands::Use { name } => commands::profile::use_profile(&name),
         Commands::Profiles => commands::profile::list_profiles(),
         Commands::Current => commands::current::run(),
+        Commands::Runpod { command } => match command {
+            RunpodCommands::Up { profile } => commands::runpod::up(&profile),
+        },
     }
 }
