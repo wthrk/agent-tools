@@ -9,6 +9,9 @@ pub fn run() -> Result<()> {
     let skills_dir = paths::skills_dir()?;
     let bin_dir = agent_tools_home.join("bin");
     let backups_dir = paths::backups_dir()?;
+    let templates_dir = paths::templates_dir()?;
+    let claude_templates_dir = paths::claude_templates_dir()?;
+    let codex_templates_dir = paths::codex_templates_dir()?;
 
     println!("{}", "Initializing agent-tools...".green().bold());
     println!();
@@ -19,6 +22,9 @@ pub fn run() -> Result<()> {
         (&skills_dir, "skills directory"),
         (&bin_dir, "bin directory"),
         (&backups_dir, "backups directory"),
+        (&templates_dir, "templates directory"),
+        (&claude_templates_dir, "claude templates directory"),
+        (&codex_templates_dir, "codex templates directory"),
     ];
 
     for (dir, name) in &dirs {

@@ -1,7 +1,9 @@
 pub mod build;
 pub mod cleanup;
+pub mod current;
 pub mod init;
 pub mod link;
+pub mod profile;
 pub mod rebase;
 pub mod skill;
 pub mod startup;

@@ -71,6 +71,18 @@ enum Commands {
 
     /// Clean up old backups
     Cleanup,
+
+    /// Use a named profile template
+    Use {
+        /// Profile name
+        name: String,
+    },
+
+    /// List available profile names
+    Profiles,
+
+    /// Show current/previous profile state
+    Current,
 }
 
 #[derive(Subcommand)]
@@ -217,5 +229,8 @@ fn main() -> anyhow::Result<()> {
         },
         Commands::Startup => commands::startup::run(),
         Commands::Cleanup => commands::cleanup::run(),
+        Commands::Use { name } => commands::profile::use_profile(&name),
+        Commands::Profiles => commands::profile::list_profiles(),
+        Commands::Current => commands::current::run(),
     }
 }

@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::io::{self, IsTerminal, Write};
 use std::os::unix::fs::symlink;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::config::Config;
@@ -12,10 +12,12 @@ use crate::fs_utils;
 use crate::paths;
 
 pub fn run(dry_run: bool, prune: bool) -> Result<()> {
-    let config_path = paths::config_path()?;
+    let agent_tools_home = paths::agent_tools_home()?;
+    let claude_source_home = resolve_claude_source_home(&agent_tools_home);
+    let codex_source_root = resolve_codex_source_root(&agent_tools_home);
+    let config_path = resolve_claude_config_path(&agent_tools_home, &claude_source_home);
     let config = Config::load(&config_path)?;
 
-    let agent_tools_home = paths::agent_tools_home()?;
     let skills_source = paths::skills_dir()?;
     let claude_home = paths::claude_home()?;
     let claude_skills = paths::claude_skills_dir()?;
@@ -176,7 +178,7 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "Settings:".bold());
     sync_settings(
-        &agent_tools_home,
+        &claude_source_home,
         &claude_home,
         config.manage_settings,
         dry_run,
@@ -186,7 +188,7 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "Plugins:".bold());
     sync_plugins(
-        &agent_tools_home,
+        &claude_source_home,
         &claude_home,
         config.manage_plugins,
         dry_run,
@@ -196,7 +198,7 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "CLAUDE.md:".bold());
     sync_claude_md(
-        &agent_tools_home,
+        &claude_source_home,
         &claude_home,
         config.manage_claude_md,
         dry_run,
@@ -206,7 +208,7 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "Hooks:".bold());
     sync_hooks(
-        &agent_tools_home,
+        &claude_source_home,
         &claude_home,
         config.manage_hooks,
         dry_run,
@@ -217,13 +219,13 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
     println!();
     println!("{}", "Codex config:".bold());
     sync_codex_config(
-        &agent_tools_home,
+        &codex_source_root,
         &codex_home,
         config.manage_codex_config,
         dry_run,
     )?;
     sync_codex_agents(
-        &agent_tools_home,
+        &codex_source_root,
         &codex_home,
         config.manage_codex_config,
         dry_run,
@@ -270,12 +272,12 @@ pub fn run(dry_run: bool, prune: bool) -> Result<()> {
 }
 
 fn sync_settings(
-    agent_tools_home: &Path,
+    claude_source_home: &Path,
     claude_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("settings.json");
+    let source = claude_source_home.join("settings.json");
     let target = claude_home.join("settings.json");
 
     if !manage {
@@ -342,12 +344,12 @@ fn sync_settings(
 }
 
 fn sync_plugins(
-    agent_tools_home: &Path,
+    claude_source_home: &Path,
     claude_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("plugins");
+    let source = claude_source_home.join("plugins");
     let target = claude_home.join("plugins");
 
     if !manage {
@@ -416,12 +418,12 @@ fn sync_plugins(
 }
 
 fn sync_claude_md(
-    agent_tools_home: &Path,
+    claude_source_home: &Path,
     claude_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("global/CLAUDE.md");
+    let source = claude_source_home.join("global/CLAUDE.md");
     let target = claude_home.join("CLAUDE.md");
 
     if !manage {
@@ -488,12 +490,12 @@ fn sync_claude_md(
 }
 
 fn sync_hooks(
-    agent_tools_home: &Path,
+    claude_source_home: &Path,
     claude_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("global/hooks");
+    let source = claude_source_home.join("global/hooks");
     let target = claude_home.join("hooks");
 
     if !manage {
@@ -560,12 +562,12 @@ fn sync_hooks(
 }
 
 fn sync_codex_config(
-    agent_tools_home: &Path,
+    codex_source_root: &Path,
     codex_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("codex/config.toml");
+    let source = codex_source_root.join("config.toml");
     let local_override = codex_home.join("config.local.toml");
     let target = codex_home.join("config.toml");
 
@@ -665,12 +667,12 @@ fn sync_codex_config(
 }
 
 fn sync_codex_agents(
-    agent_tools_home: &Path,
+    codex_source_root: &Path,
     codex_home: &Path,
     manage: bool,
     dry_run: bool,
 ) -> Result<()> {
-    let source = agent_tools_home.join("codex/agents");
+    let source = codex_source_root.join("agents");
     let target = codex_home.join("agents");
 
     if !manage {
@@ -904,6 +906,44 @@ fn save_managed_mcp_names(path: &Path, names: &[String]) -> Result<()> {
         .with_context(|| format!("Failed to serialize {}", path.display()))?;
     fs::write(path, content).with_context(|| format!("Failed to write {}", path.display()))?;
     Ok(())
+}
+
+fn resolve_claude_config_path(agent_tools_home: &Path, claude_source_home: &Path) -> PathBuf {
+    let active_config = claude_source_home.join("config.yaml");
+    if active_config.exists() {
+        active_config
+    } else {
+        agent_tools_home.join("config.yaml")
+    }
+}
+
+fn resolve_claude_source_home(agent_tools_home: &Path) -> PathBuf {
+    let active = agent_tools_home.join(".local/active/claude");
+    resolve_link_or_directory(&active).unwrap_or_else(|| agent_tools_home.to_path_buf())
+}
+
+fn resolve_codex_source_root(agent_tools_home: &Path) -> PathBuf {
+    let active = agent_tools_home.join(".local/active/codex");
+    resolve_link_or_directory(&active).unwrap_or_else(|| agent_tools_home.join("codex"))
+}
+
+fn resolve_link_or_directory(path: &Path) -> Option<PathBuf> {
+    if path.is_symlink() {
+        let target = fs::read_link(path).ok()?;
+        let absolute = if target.is_absolute() {
+            target
+        } else {
+            path.parent()?.join(target)
+        };
+        if absolute.is_dir() {
+            return Some(absolute);
+        }
+        return None;
+    }
+    if path.is_dir() {
+        return Some(path.to_path_buf());
+    }
+    None
 }
 
 #[cfg(test)]
