@@ -29,7 +29,5 @@ if [[ -d "${cwd}/.jj" ]]; then
   }
 }
 EOF
-else
-    echo 'OK'
 fi
 exit 0
