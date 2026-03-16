@@ -2,7 +2,8 @@
 set -euo pipefail
 # SessionStart: agent-tools 更新チェック + jj 検出
 
-_AT_LOG_DIR="${HOME}/.agent-tools/logs"
+_AT_HOME="${AGENT_TOOLS_HOME:-${HOME}/.agent-tools}"
+_AT_LOG_DIR="${_AT_HOME}/logs"
 mkdir -p "${_AT_LOG_DIR}"
 
 if command -v agent-tools &>/dev/null; then
@@ -21,7 +22,7 @@ fi
 
 # 追加コンテキストを必要に応じて積み上げる
 context_lines=()
-current_profile_file="${HOME}/.agent-tools/.local/state/current.json"
+current_profile_file="${_AT_HOME}/.local/state/current.json"
 runpod_active=0
 
 if [[ -f "${current_profile_file}" ]] && command -v jq &>/dev/null; then

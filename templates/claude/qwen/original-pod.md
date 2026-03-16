@@ -21,7 +21,7 @@ This file records the last known working RunPod pod configuration for Qwen CLI.
 
 ## Recreate
 
-Use [recreate-original-pod.sh](/Users/ya/.agent-tools/templates/claude/qwen/recreate-original-pod.sh):
+Use [recreate-original-pod.sh](./recreate-original-pod.sh):
 
 ```bash
 bash templates/claude/qwen/recreate-original-pod.sh

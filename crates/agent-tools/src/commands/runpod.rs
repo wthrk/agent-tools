@@ -701,14 +701,12 @@ fn verify_claude_endpoint(base_url: &str, config: &RunpodConfig) -> Result<()> {
             .context("Failed to execute curl for Claude endpoint verification")?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let mut lines = stdout.lines();
-        let body = lines.next().unwrap_or_default().to_string();
-        let code = lines.last().unwrap_or_default().trim().to_string();
+        let (body, code) = split_curl_response(&stdout);
         if code == "200" {
             return Ok(());
         }
-        last_code = code;
-        last_body = body;
+        last_code = code.to_string();
+        last_body = body.to_string();
         last_stderr = String::from_utf8_lossy(&output.stderr).to_string();
         std::thread::sleep(std::time::Duration::from_secs(2));
     }
@@ -720,6 +718,14 @@ fn verify_claude_endpoint(base_url: &str, config: &RunpodConfig) -> Result<()> {
         last_body,
         last_stderr
     );
+}
+
+fn split_curl_response(stdout: &str) -> (&str, &str) {
+    let trimmed = stdout.trim_end_matches('\n');
+    if let Some((body, code)) = trimmed.rsplit_once('\n') {
+        return (body, code.trim());
+    }
+    ("", trimmed.trim())
 }
 
 fn resolve_runpod_api_key(auth_env: &str) -> Result<String> {
@@ -821,7 +827,7 @@ mod tests {
         RunpodConfig, build_create_args, build_serverless_create_args, extract_endpoint_id,
         extract_endpoint_id_from_list_by_name, extract_pod_id, extract_workers,
         find_item_by_name_or_id, is_already_running_message, render_claude_base_url,
-        upsert_base_url,
+        split_curl_response, upsert_base_url,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -1014,5 +1020,12 @@ mod tests {
         let text = extract_workers(&json!({"workersCurrent": 1, "workersMin": 0, "workersMax": 2}))
             .expect("workers");
         assert_eq!(text, "1 (min=0, max=2)");
+    }
+
+    #[test]
+    fn split_curl_response_preserves_multiline_body() {
+        let (body, code) = split_curl_response("{\"a\":1}\n{\"b\":2}\n200\n");
+        assert_eq!(body, "{\"a\":1}\n{\"b\":2}");
+        assert_eq!(code, "200");
     }
 }

@@ -1,1 +1,1 @@
-/Users/ya/.agent-tools/global/CLAUDE.md
+../../../../global/CLAUDE.md

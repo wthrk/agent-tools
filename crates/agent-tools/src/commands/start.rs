@@ -91,8 +91,11 @@ fn expand_shell_like_value(value: &str) -> String {
     }
 
     if let Some(inner) = trimmed.strip_prefix("${").and_then(|v| v.strip_suffix('}')) {
-        if let Some(var_name) = inner.strip_suffix(":-") {
-            return std::env::var(var_name).unwrap_or_default();
+        if let Some((var_name, default_value)) = inner.split_once(":-") {
+            match std::env::var(var_name) {
+                Ok(value) if !value.is_empty() => return value,
+                _ => return default_value.to_string(),
+            }
         }
         return std::env::var(inner).unwrap_or_default();
     }
@@ -193,6 +196,38 @@ mod tests {
     fn expand_shell_like_value_supports_quotes() {
         assert_eq!(expand_shell_like_value("\"abc\""), "abc");
         assert_eq!(expand_shell_like_value("'xyz'"), "xyz");
+    }
+
+    #[test]
+    fn expand_shell_like_value_supports_default_expression() {
+        let key = "AGENT_TOOLS_TEST_RUNPOD_DEFAULT";
+        unsafe {
+            std::env::remove_var(key);
+        }
+        assert_eq!(
+            expand_shell_like_value(&format!("\"${{{key}:-fallback}}\"")),
+            "fallback"
+        );
+
+        unsafe {
+            std::env::set_var(key, "value");
+        }
+        assert_eq!(
+            expand_shell_like_value(&format!("\"${{{key}:-fallback}}\"")),
+            "value"
+        );
+
+        unsafe {
+            std::env::set_var(key, "");
+        }
+        assert_eq!(
+            expand_shell_like_value(&format!("\"${{{key}:-fallback}}\"")),
+            "fallback"
+        );
+
+        unsafe {
+            std::env::remove_var(key);
+        }
     }
 
     #[test]
