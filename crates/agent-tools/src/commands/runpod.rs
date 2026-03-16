@@ -8,6 +8,9 @@ use std::path::Path;
 use std::process::Command;
 use toml::Value as TomlValue;
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use crate::commands::profile;
 use crate::paths;
 
@@ -654,9 +657,27 @@ fn write_claude_endpoint(endpoint_id: &str, config: &RunpodConfig) -> Result<Str
     );
     fs::write(&env_path, env_content)
         .with_context(|| format!("Failed to write {}", env_path.display()))?;
+    secure_private_file(&env_path)?;
     fs::write(&expected_path, format!("{base_url}\n"))
         .with_context(|| format!("Failed to write {}", expected_path.display()))?;
+    secure_private_file(&expected_path)?;
     Ok(base_url)
+}
+
+fn secure_private_file(path: &Path) -> Result<()> {
+    #[cfg(unix)]
+    {
+        let permissions = fs::Permissions::from_mode(0o600);
+        fs::set_permissions(path, permissions)
+            .with_context(|| format!("Failed to set permissions on {}", path.display()))?;
+    }
+
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+    }
+
+    Ok(())
 }
 
 fn render_claude_base_url(endpoint_id: &str, config: &RunpodConfig) -> Result<String> {
