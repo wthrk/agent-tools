@@ -43,3 +43,8 @@ cargo test -p agent-tools -- <test_name>
 - jj使用（git禁止）
 - unwrap/expect/panic/unsafe 禁止
 - Result で伝播
+
+## Runtime Logs
+
+- 必要な実行ログは `~/.agent-tools/logs/` を参照する
+- 生成ログをリポジトリ配下に置かない

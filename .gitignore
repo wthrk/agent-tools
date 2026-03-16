@@ -29,5 +29,8 @@ Thumbs.db
 # Backups
 /backups/
 
+# Runtime logs
+/logs/
+
 # Local profile runtime state
 /.local/
