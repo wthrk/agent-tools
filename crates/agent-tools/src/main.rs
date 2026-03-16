@@ -69,6 +69,26 @@ enum Commands {
     /// Run startup checks (auto-update + sync) for SessionStart hooks
     Startup,
 
+    /// Start Claude or Codex
+    Start {
+        #[command(subcommand)]
+        command: StartCommands,
+    },
+
+    /// Start Claude
+    Claude {
+        /// Extra args passed to claude command
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
+    /// Start Codex
+    Codex {
+        /// Extra args passed to codex command
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+
     /// Clean up old backups
     Cleanup,
 
@@ -83,6 +103,12 @@ enum Commands {
 
     /// Show current/previous profile state
     Current,
+
+    /// Manage RunPod from profile-bound config
+    Runpod {
+        #[command(subcommand)]
+        command: RunpodCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -170,6 +196,37 @@ enum SkillCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum RunpodCommands {
+    /// Create or reuse a RunPod resource using templates/claude/<profile>/runpod.yaml
+    Up {
+        /// Profile name
+        profile: String,
+    },
+
+    /// Show RunPod resource status for a profile
+    Status {
+        /// Profile name
+        profile: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum StartCommands {
+    /// Start Claude
+    Claude {
+        /// Extra args passed to claude command
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+    /// Start Codex
+    Codex {
+        /// Extra args passed to codex command
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
+}
+
 fn main() -> anyhow::Result<()> {
     // Check OS (only macOS and Linux supported)
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -228,9 +285,19 @@ fn main() -> anyhow::Result<()> {
             }
         },
         Commands::Startup => commands::startup::run(),
+        Commands::Start { command } => match command {
+            StartCommands::Claude { args } => commands::start::run_claude(&args),
+            StartCommands::Codex { args } => commands::start::run_codex(&args),
+        },
+        Commands::Claude { args } => commands::start::run_claude(&args),
+        Commands::Codex { args } => commands::start::run_codex(&args),
         Commands::Cleanup => commands::cleanup::run(),
         Commands::Use { name } => commands::profile::use_profile(&name),
         Commands::Profiles => commands::profile::list_profiles(),
         Commands::Current => commands::current::run(),
+        Commands::Runpod { command } => match command {
+            RunpodCommands::Up { profile } => commands::runpod::up(&profile),
+            RunpodCommands::Status { profile } => commands::runpod::status(&profile),
+        },
     }
 }

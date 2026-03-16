@@ -1,0 +1,1 @@
+/Users/ya/.agent-tools/global/CLAUDE.md

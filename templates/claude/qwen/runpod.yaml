@@ -1,0 +1,26 @@
+deployment: serverless
+name: qwen3-coder-next-fp8
+template_id: REPLACE_TEMPLATE_ID
+claude_base_url_template: https://api.runpod.ai/v2/{endpoint_id}/openai
+claude_auth_token_env: RUNPOD_API_KEY
+gpu_id: NVIDIA H100 NVL
+compute_type: GPU
+gpu_count: 1
+workers_min: 0
+workers_max: 1
+volume_in_gb: 150
+volume_mount_path: /workspace
+env:
+  MODEL_NAME: Qwen/Qwen3-Coder-Next-FP8
+  MAX_MODEL_LEN: "131072"
+  MAX_NUM_BATCHED_TOKENS: "4096"
+  MAX_NUM_SEQS: "1"
+  MAX_CONCURRENCY: "1"
+  GPU_MEMORY_UTILIZATION: "0.85"
+  ENABLE_AUTO_TOOL_CHOICE: "true"
+  TOOL_CALL_PARSER: qwen3_coder
+  DISABLE_LOG_REQUESTS: "false"
+  DISABLE_LOG_STATS: "false"
+  MAX_LOG_LEN: "4000"
+  HF_HOME: /workspace/.huggingface
+  PYTORCH_ALLOC_CONF: expandable_segments:True

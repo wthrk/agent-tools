@@ -65,7 +65,11 @@ agent-tools skill install my-skill
 | `unlink <name>` | スキルをアンリンク |
 | `build` | ビルド＆インストール |
 | `update` | アップデート（git pull && cargo build） |
+| `claude [-- <args...>]` | `~/.claude/runpod.env` を反映して Claude 起動 |
+| `codex [-- <args...>]` | Codex 起動 |
 | `cleanup` | 古いバックアップ削除 |
+| `runpod up <profile>` | `templates/claude/<profile>/runpod.yaml` に基づき Serverless endpoint を作成し、Codex接続先を自動更新 |
+| `runpod status <profile>` | `runpod.yaml` に対応する Serverless endpoint / Pod の状態と Claude 疎通を確認 |
 
 ### skill サブコマンド
 
@@ -137,6 +141,47 @@ manage_plugins: false
 ```
 
 `config_file` は相対パス（例: `agents/worker.toml`）で管理してください。
+
+RunPod Serverless を使う場合、`templates/codex/<profile>/config.toml` の
+`model_provider` 設定をベースにし、`~/.codex/config.local.toml` で
+`base_url`（endpoint id を含む）を上書きしてください。
+
+### RunPod プロファイル設定
+
+RunPod の設定は profile に紐づけて `templates/claude/<profile>/runpod.yaml` に配置します。
+
+例:
+
+```yaml
+deployment: serverless
+name: runpod-llm
+template_id: pvcdqlwm9r
+claude_base_url_template: https://api.runpod.ai/v2/{endpoint_id}
+claude_auth_token_env: RUNPOD_API_KEY
+gpu_id: NVIDIA L40S
+compute_type: GPU
+gpu_count: 1
+workers_min: 1
+workers_max: 2
+volume_in_gb: 120
+volume_mount_path: /workspace
+```
+
+実行:
+
+```bash
+agent-tools runpod up runpod
+```
+
+Dockerでモデル起動を行う場合は `templates/claude/<profile>/docker/` の
+`Dockerfile`, `entrypoint.sh`, `proxy_server.py` を使ってイメージを作成・pushし、
+RunPod template に設定してください。
+
+`runpod up` 実行後は Claude 用に生成される `~/.claude/runpod.env` を
+`source` してから Claude を起動してください。`SessionStart` hook で
+`ANTHROPIC_BASE_URL` 不整合がある場合は警告を出します。
+
+モデルは `/workspace/model-cache` にキャッシュされる前提です（初回のみ重い）。
 
 ### プロジェクト構造
 

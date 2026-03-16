@@ -10,6 +10,8 @@ use crate::config::validate_skill_name;
 use crate::fs_utils;
 use crate::paths;
 
+const DEFAULT_PROFILE_NAME: &str = "default";
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProfileState {
     pub claude: Option<String>,
@@ -22,14 +24,6 @@ pub fn use_profile(name: &str) -> Result<()> {
 
     let claude_templates = paths::claude_templates_dir()?;
     let codex_templates = paths::codex_templates_dir()?;
-    let claude_source = claude_templates.join(name);
-    let codex_source = codex_templates.join(name);
-    let has_claude = claude_source.is_dir();
-    let has_codex = codex_source.is_dir();
-    if !has_claude && !has_codex {
-        bail!("Profile '{}' not found", name);
-    }
-
     let local_root = paths::local_state_root()?;
     let state_dir = paths::profile_state_dir()?;
     let active_dir = paths::active_templates_dir()?;
@@ -61,26 +55,30 @@ pub fn use_profile(name: &str) -> Result<()> {
     let current_path = state_dir.join("current.json");
     let previous_path = state_dir.join("previous.json");
     let mut current = load_state(&current_path)?;
+    initialize_default_profiles(&runtime_profiles_dir, &mut current)?;
+
+    let claude_source =
+        resolve_profile_source("claude", name, &claude_templates, &runtime_profiles_dir);
+    let codex_source =
+        resolve_profile_source("codex", name, &codex_templates, &runtime_profiles_dir);
+    let has_claude = claude_source.is_some();
+    let has_codex = codex_source.is_some();
+    if !has_claude && !has_codex {
+        bail!("Profile '{}' not found", name);
+    }
+
     save_state(&previous_path, &current)?;
     snapshot_home_dirs(&snapshots_dir)?;
 
-    let runtime_profile_root = runtime_profiles_dir.join(name);
-    fs::create_dir_all(&runtime_profile_root).with_context(|| {
-        format!(
-            "Failed to create runtime profile dir: {}",
-            runtime_profile_root.display()
-        )
-    })?;
-
-    if has_claude {
-        let runtime_claude = runtime_profile_root.join("claude");
+    if let Some(claude_source) = claude_source {
+        let runtime_claude = runtime_profiles_dir.join("claude").join(name);
         ensure_runtime_profile(&claude_source, &runtime_claude)?;
         switch_home_to_runtime("claude", &paths::claude_home()?, &runtime_claude)?;
         set_active_link(&active_dir.join("claude"), &claude_source)?;
         current.claude = Some(name.to_string());
     }
-    if has_codex {
-        let runtime_codex = runtime_profile_root.join("codex");
+    if let Some(codex_source) = codex_source {
+        let runtime_codex = runtime_profiles_dir.join("codex").join(name);
         ensure_runtime_profile(&codex_source, &runtime_codex)?;
         switch_home_to_runtime("codex", &paths::codex_home()?, &runtime_codex)?;
         set_active_link(&active_dir.join("codex"), &codex_source)?;
@@ -149,9 +147,12 @@ fn collect_profiles() -> Result<Vec<(String, Vec<String>)>> {
     let mut map: HashMap<String, BTreeSet<String>> = HashMap::new();
     let claude_templates = paths::claude_templates_dir()?;
     let codex_templates = paths::codex_templates_dir()?;
+    let runtime_profiles_dir = paths::local_state_root()?.join("profiles");
 
     collect_target_profiles(&claude_templates, "claude", &mut map)?;
     collect_target_profiles(&codex_templates, "codex", &mut map)?;
+    collect_target_profiles(&runtime_profiles_dir.join("claude"), "claude", &mut map)?;
+    collect_target_profiles(&runtime_profiles_dir.join("codex"), "codex", &mut map)?;
 
     let mut items: Vec<(String, Vec<String>)> = map
         .into_iter()
@@ -239,7 +240,93 @@ fn validate_profile_name(name: &str) -> Result<()> {
     validate_skill_name(name).map_err(|e| anyhow::anyhow!("Invalid profile name: {}", e))
 }
 
+fn initialize_default_profiles(
+    runtime_profiles_dir: &Path,
+    current: &mut ProfileState,
+) -> Result<()> {
+    initialize_default_profile_for_side(
+        "claude",
+        &paths::claude_home()?,
+        runtime_profiles_dir,
+        &mut current.claude,
+    )?;
+    initialize_default_profile_for_side(
+        "codex",
+        &paths::codex_home()?,
+        runtime_profiles_dir,
+        &mut current.codex,
+    )?;
+    Ok(())
+}
+
+fn initialize_default_profile_for_side(
+    side: &str,
+    home_path: &Path,
+    runtime_profiles_dir: &Path,
+    current_slot: &mut Option<String>,
+) -> Result<()> {
+    let Some(source) = resolve_active_source(home_path) else {
+        return Ok(());
+    };
+
+    let side_profiles_dir = runtime_profiles_dir.join(side);
+    fs::create_dir_all(&side_profiles_dir)
+        .with_context(|| format!("Failed to create {}", side_profiles_dir.display()))?;
+    let default_dir = side_profiles_dir.join(DEFAULT_PROFILE_NAME);
+
+    if source.starts_with(&side_profiles_dir) {
+        if current_slot.is_none() {
+            current_slot.clone_from(&extract_profile_name(&source, &side_profiles_dir));
+        }
+        return Ok(());
+    }
+
+    if !default_dir.exists() {
+        fs_utils::copy_dir_recursive(&source, &default_dir).with_context(|| {
+            format!(
+                "Failed to initialize default {} profile from {} to {}",
+                side,
+                source.display(),
+                default_dir.display()
+            )
+        })?;
+    }
+
+    if current_slot.is_none() {
+        *current_slot = Some(DEFAULT_PROFILE_NAME.to_string());
+    }
+    Ok(())
+}
+
+fn extract_profile_name(source: &Path, side_profiles_dir: &Path) -> Option<String> {
+    let relative = source.strip_prefix(side_profiles_dir).ok()?;
+    let name = relative.components().next()?;
+    Some(name.as_os_str().to_string_lossy().to_string())
+}
+
+fn resolve_profile_source(
+    side: &str,
+    name: &str,
+    templates_dir: &Path,
+    runtime_profiles_dir: &Path,
+) -> Option<PathBuf> {
+    let template_source = templates_dir.join(name);
+    if template_source.is_dir() {
+        return Some(template_source);
+    }
+
+    let runtime_source = runtime_profiles_dir.join(side).join(name);
+    if runtime_source.is_dir() {
+        return Some(runtime_source);
+    }
+
+    None
+}
+
 fn ensure_runtime_profile(template_dir: &Path, runtime_dir: &Path) -> Result<()> {
+    if template_dir == runtime_dir {
+        return Ok(());
+    }
     if runtime_dir.exists() {
         return Ok(());
     }
