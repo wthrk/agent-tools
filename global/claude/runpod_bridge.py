@@ -41,11 +41,23 @@ def next_request_id() -> int:
 def read_tail_lines(path: str, tail: int) -> List[str]:
     tail = max(1, min(tail, 1000))
     try:
-        with open(path, encoding="utf-8") as handle:
-            lines = handle.readlines()
+        with open(path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            position = handle.tell()
+            chunk = bytearray()
+            newline_count = 0
+
+            while position > 0 and newline_count <= tail:
+                read_size = min(4096, position)
+                position -= read_size
+                handle.seek(position)
+                data = handle.read(read_size)
+                chunk[:0] = data
+                newline_count = chunk.count(b"\n")
     except OSError:
         return []
-    return [line.rstrip("\n") for line in lines[-tail:]]
+    lines = chunk.decode("utf-8", errors="replace").splitlines()
+    return lines[-tail:]
 
 
 def anthropic_text_from_content(content: Any) -> str:

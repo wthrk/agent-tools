@@ -31,7 +31,7 @@ pub fn backups_dir() -> Result<PathBuf> {
     Ok(agent_tools_home()?.join("backups"))
 }
 
-/// Get the logs directory (~/.agent-tools/logs)
+/// Get the logs directory ($AGENT_TOOLS_HOME/logs, default: ~/.agent-tools/logs)
 pub fn logs_dir() -> Result<PathBuf> {
     Ok(agent_tools_home()?.join("logs"))
 }

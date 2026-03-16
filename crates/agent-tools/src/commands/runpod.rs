@@ -692,6 +692,8 @@ fn render_claude_base_url(endpoint_id: &str, config: &RunpodConfig) -> Result<St
 }
 
 fn verify_claude_endpoint(base_url: &str, config: &RunpodConfig) -> Result<()> {
+    ensure_curl_exists()?;
+
     let auth_env = config
         .claude_auth_token_env
         .as_deref()
@@ -739,6 +741,17 @@ fn verify_claude_endpoint(base_url: &str, config: &RunpodConfig) -> Result<()> {
         last_body,
         last_stderr
     );
+}
+
+fn ensure_curl_exists() -> Result<()> {
+    let output = Command::new("curl")
+        .arg("--version")
+        .output()
+        .context("Failed to execute curl --version")?;
+    if output.status.success() {
+        return Ok(());
+    }
+    bail!("curl is required for Claude endpoint verification but is not available.");
 }
 
 fn split_curl_response(stdout: &str) -> (&str, &str) {
@@ -1048,5 +1061,12 @@ mod tests {
         let (body, code) = split_curl_response("{\"a\":1}\n{\"b\":2}\n200\n");
         assert_eq!(body, "{\"a\":1}\n{\"b\":2}");
         assert_eq!(code, "200");
+    }
+
+    #[test]
+    fn split_curl_response_handles_code_only_output() {
+        let (body, code) = split_curl_response("503\n");
+        assert_eq!(body, "");
+        assert_eq!(code, "503");
     }
 }

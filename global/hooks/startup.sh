@@ -4,6 +4,7 @@ set -euo pipefail
 
 _AT_HOME="${AGENT_TOOLS_HOME:-${HOME}/.agent-tools}"
 _AT_LOG_DIR="${_AT_HOME}/logs"
+_CLAUDE_HOME="${CLAUDE_HOME:-${HOME}/.claude}"
 mkdir -p "${_AT_LOG_DIR}"
 
 if command -v agent-tools &>/dev/null; then
@@ -22,12 +23,17 @@ fi
 
 # 追加コンテキストを必要に応じて積み上げる
 context_lines=()
-current_profile_file="${_AT_HOME}/.local/state/current.json"
 runpod_active=0
+runpod_env_file="${_CLAUDE_HOME}/runpod.env"
 
-if [[ -f "${current_profile_file}" ]] && command -v jq &>/dev/null; then
-    current_claude_profile="$(jq -r '.claude // empty' "${current_profile_file}" 2>/dev/null || true)"
-    if [[ "${current_claude_profile}" == "runpod" ]]; then
+if [[ -f "${runpod_env_file}" ]]; then
+    runpod_active=1
+elif [[ -n "${ANTHROPIC_BASE_URL:-}" ]] && [[ "${ANTHROPIC_BASE_URL}" == *"api.runpod.ai/v2/"* ]] && [[ "${ANTHROPIC_BASE_URL}" == *"/openai"* ]]; then
+    runpod_active=1
+fi
+
+if [[ ${runpod_active} -eq 0 ]] && [[ -f "${runpod_env_file}" ]] && command -v grep &>/dev/null; then
+    if grep -q "api.runpod.ai/v2/.*\/openai" "${runpod_env_file}" 2>/dev/null; then
         runpod_active=1
     fi
 fi
@@ -45,13 +51,13 @@ if [[ ${runpod_active} -eq 1 ]]; then
     context_lines+=("If multiple tools are needed, emit multiple tool_use blocks in one assistant message. If no tool is needed, return normal assistant text only.")
 fi
 
-expected_base_url_file="${HOME}/.claude/runpod_expected_anthropic_base_url"
+expected_base_url_file="${_CLAUDE_HOME}/runpod_expected_anthropic_base_url"
 if [[ -f "${expected_base_url_file}" ]]; then
     expected_base_url="$(cat "${expected_base_url_file}" 2>/dev/null || true)"
     expected_base_url="${expected_base_url//$'\n'/}"
     current_base_url="${ANTHROPIC_BASE_URL:-}"
     if [[ -n "${expected_base_url}" ]] && [[ "${current_base_url}" != "${expected_base_url}" ]]; then
-        context_lines+=("RunPod profile is active but ANTHROPIC_BASE_URL is not synced. Run: source ~/.claude/runpod.env")
+        context_lines+=("RunPod profile is active but ANTHROPIC_BASE_URL is not synced. Run: source ${_CLAUDE_HOME}/runpod.env")
     fi
 fi
 

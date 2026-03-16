@@ -16,6 +16,20 @@ struct BridgeProcess {
     state_path: std::path::PathBuf,
 }
 
+impl BridgeProcess {
+    fn cleanup(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+        let _ = fs::remove_file(&self.state_path);
+    }
+}
+
+impl Drop for BridgeProcess {
+    fn drop(&mut self) {
+        self.cleanup();
+    }
+}
+
 pub fn run_claude(extra_args: &[String]) -> Result<()> {
     let mut cmd = Command::new("claude");
     cmd.args(extra_args);
@@ -31,11 +45,7 @@ pub fn run_claude(extra_args: &[String]) -> Result<()> {
     }
 
     let status = cmd.status().context("Failed to start claude command")?;
-    if let Some(mut bridge_proc) = bridge {
-        let _ = bridge_proc.child.kill();
-        let _ = bridge_proc.child.wait();
-        let _ = fs::remove_file(&bridge_proc.state_path);
-    }
+    drop(bridge);
     if status.success() {
         return Ok(());
     }
